@@ -1,21 +1,13 @@
-import styled from 'styled-components';
+import React from 'react';
+import MainPage from './pages/MainPage';
 
-const Container = styled.div`
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	height: 100vh;
-	background-color: #282c34;
-	color: white;
-	font-size: 2rem;
-`;
-
-function App() {
+const App = () => {
 	return (
-		<Container>
-			<h1>Coditor Frontend</h1>
-		</Container>
+		<>
+			{/*MainPage 렌더링 테스트 */}
+			<MainPage />
+		</>
 	);
-}
+};
 
 export default App;
