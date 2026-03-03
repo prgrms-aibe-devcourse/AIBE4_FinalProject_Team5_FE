@@ -1,5 +1,6 @@
 import React from 'react';
 import '../styles/global.css';
+import CodeEditor from '../features/ide/CodeEditor'; //ide link test
 
 const MainPage = () => {
 	return (
@@ -33,6 +34,11 @@ const MainPage = () => {
 					<h2>🚀 전체 채점 현황 (대시보드)</h2>
 					<p style={styles.placeholder}>Chart.js를 활용한 실시간 제출 현황</p>
 				</section>
+                
+                <section className="card" style={{ gridColumn: '1 / -1' }}>
+                    <h2>🚀 코드 에디터 테스트</h2>
+                    <CodeEditor />
+                </section>
 			</main>
 		</div>
 	);
