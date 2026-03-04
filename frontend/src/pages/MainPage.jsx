@@ -1,7 +1,10 @@
 import React from 'react';
 import '../styles/global.css';
+import { useNavigate } from 'react-router-dom';
 
 const MainPage = () => {
+	const navigate = useNavigate();
+
 	return (
 		<div className="container">
 			<header style={styles.header}>
@@ -23,7 +26,8 @@ const MainPage = () => {
 				</section>
 
 				{/* 문제 리스트/커뮤니티 */}
-				<section className="card" style={{ gridColumn: '1 / -1' }}>
+				<section className="card" style={{ ...styles.clickableCard, gridColumn: '1 / -1' }}
+						 onClick={() => navigate('/problems')}>
 					<h2>📋 추천 문제 & 최근 게시글</h2>
 					<p style={styles.placeholder}>문제 리스트 필터 및 게시판 테이블</p>
 				</section>
@@ -58,6 +62,10 @@ const styles = {
 		color: 'var(--text-secondary)',
 		marginTop: '12px',
 		fontSize: '0.95rem'
+	},
+	clickableCard: {
+		cursor: 'pointer',
+		transition: 'transform 0.2s',
 	}
 };
 
