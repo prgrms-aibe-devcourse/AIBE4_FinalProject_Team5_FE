@@ -61,35 +61,31 @@ const CodeEditor = () => {
         setLanguage(e.target.value);
     };
 
-    const handleSubmit = () => {
-        console.log('제출된 언어:', language);
-        console.log('제출된 코드:', code);
+// 실제 백엔드로 요청 보내기
+    const handleSubmit = async () => {
+        try {
+            const response = await fetch('http://localhost:8080/api/v1/submissions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    problemId: 3, // 3번 문제로 설정
+                    memberId: 1,  // 테스트용 임시 유저 ID
+                    language: language,
+                    sourceCode: code
+                }),
+            });
 
-        // 실제로는 여기서 백엔드 API를 호출함
-        // 테스트를 위해 컴파일 에러 마커 표시 함수 실행
-        simulateCompilationError();
-    };
-
-    // 2. 컴파일 에러 마커 표시 테스트 (백엔드 응답 시뮬레이션)
-    const simulateCompilationError = () => {
-        if (!monacoRef.current || !editorRef.current) return;
-
-        const model = editorRef.current.getModel();
-        // 백엔드에서 에러가 발생한 위치와 에러 메시지를 반환해줘야 함
-        const markers = [
-            {
-                message: "';' expected (가상 컴파일 에러)",
-                severity: monacoRef.current.MarkerSeverity.Error,
-                startLineNumber: 3,
-                startColumn: 9,
-                endLineNumber: 3,
-                endColumn: 43,
+            if (response.ok) {
+                alert('코드가 채점 서버로 전송되었습니다. 잠시 대기해주세요.');
+            } else {
+                alert('서버 전송 실패');
             }
-        ];
-
-        // 에디터에 에러 마커 세팅
-        monacoRef.current.editor.setModelMarkers(model, 'owner', markers);
-        alert('테스트: 3번째 줄에 가상 컴파일 에러가 표시되었습니다.');
+        } catch (error) {
+            console.error('API 호출 에러:', error);
+            alert('서버와 연결할 수 없습니다. 백엔드가 켜져 있는지 확인하세요.');
+        }
     };
 
     return (
