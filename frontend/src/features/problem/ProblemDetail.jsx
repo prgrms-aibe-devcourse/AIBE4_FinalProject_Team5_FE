@@ -50,8 +50,21 @@ const ProblemDetail = () => {
 					← 문제 목록으로
 				</button>
 
-				{/* 문제 제목 및 태그 */}
-				<h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>{problem.title}</h1>
+				{/* 문제 제목 & 질문하기 버튼 */}
+				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+					<h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>{problem.title}</h1>
+
+					<button
+						onClick={() => navigate('/posts/new', {
+							state: { problemId: problem.id, problemTitle: problem.title }
+						})}
+						style={{ padding: '8px 16px', backgroundColor: '#f59e0b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}
+					>
+						🙋‍♂️ 이 문제 질문하기
+					</button>
+				</div>
+
+				{/* 문제 태그 */}
 				<div style={{ display: 'flex', gap: '8px', marginBottom: '32px' }}>
                     <span style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>
                         Lv.{problem.level}
