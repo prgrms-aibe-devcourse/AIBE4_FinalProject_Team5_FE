@@ -1,43 +1,75 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuthStore } from '../auth/authStore';
 
-const ProblemCreateForm = () => {
+const ProblemEditForm = () => {
+	const { id } = useParams();
 	const navigate = useNavigate();
 	const { user } = useAuthStore();
 
+	// 1. 문제 텍스트 정보 상태
 	const [title, setTitle] = useState('');
 	const [level, setLevel] = useState(1);
 	const [timeLimit, setTimeLimit] = useState(2.0);
 	const [memoryLimit, setMemoryLimit] = useState(256);
 	const [isVisible, setIsVisible] = useState(true);
-
 	const [content, setContent] = useState('');
 	const [inputDesc, setInputDesc] = useState('');
 	const [outputDesc, setOutputDesc] = useState('');
 
+	// 2. 태그 및 예시 상태
+	const [dbTags, setDbTags] = useState([]);
+	const [selectedTags, setSelectedTags] = useState([]);
 	const [examples, setExamples] = useState([{ inputExample: '', outputExample: '' }]);
 
+	// 3. 테스트케이스 상태
+	const [existingTestCases, setExistingTestCases] = useState([]);
 	const [inputFile, setInputFile] = useState(null);
 	const [outputFile, setOutputFile] = useState(null);
 
-	const [dbTags, setDbTags] = useState([]);
-	const [selectedTags, setSelectedTags] = useState([]);
-
-	// 백엔드에서 태그 목록 불러오기
 	useEffect(() => {
-		const fetchTags = async () => {
+		const fetchProblemData = async () => {
 			try {
 				const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-				const response = await axios.get(`${baseUrl}/coditor/tags`);
-				setDbTags(response.data);
+
+				// 1. 전체 태그 목록 불러오기
+				const tagsRes = await axios.get(`${baseUrl}/coditor/tags`);
+				setDbTags(tagsRes.data || []);
+
+				// 2. 문제 상세 정보 불러오기
+				const problemRes = await axios.get(`${baseUrl}/coditor/problems/${id}`);
+				const p = problemRes.data;
+
+				setTitle(p.title);
+				setLevel(p.level);
+				setTimeLimit(p.timeLimit);
+				setMemoryLimit(p.memoryLimit);
+				setIsVisible(p.isVisible);
+				setContent(p.content);
+				setInputDesc(p.inputDesc);
+				setOutputDesc(p.outputDesc);
+				setSelectedTags(p.tags || []);
+
+				// 기존 예시 세팅
+				if (p.examples && p.examples.length > 0) {
+					setExamples(p.examples.map(ex => ({
+						inputExample: ex.inputExample || ex.input || '',
+						outputExample: ex.outputExample || ex.output || ''
+					})));
+				}
+
+				// 3. 기존 테스트케이스 목록 불러오기
+				const tcRes = await axios.get(`${baseUrl}/coditor/admin/problems/${id}/testcases`);
+				setExistingTestCases(tcRes.data || []);
+
 			} catch (error) {
-				console.error('태그 목록 불러오기 실패:', error);
+				console.error('기존 문제 데이터를 불러오는 중 에러 발생:', error);
+				alert('문제 정보를 불러오지 못했습니다.');
 			}
 		};
-		fetchTags();
-	}, []);
+		fetchProblemData();
+	}, [id]);
 
 	if (!user || user.role !== 'ADMIN') {
 		return <div style={{ padding: '50px', textAlign: 'center', color: 'red' }}>관리자만 접근 가능한 페이지입니다.</div>;
@@ -52,7 +84,7 @@ const ProblemCreateForm = () => {
 		setExamples(newExamples);
 	};
 
-	// 태그 클릭 핸들러 (토글 방식)
+	// 태그 클릭 핸들러
 	const handleTagToggle = (tagName) => {
 		if (selectedTags.includes(tagName)) {
 			setSelectedTags(selectedTags.filter(t => t !== tagName));
@@ -61,59 +93,61 @@ const ProblemCreateForm = () => {
 		}
 	};
 
-	// 🚀 폼 제출
+	// 기존 테스트케이스 단건 삭제 핸들러
+	const handleDeleteTestCase = async (testcaseId) => {
+		if (!window.confirm('정말 이 테스트케이스를 삭제하시겠습니까?')) return;
+		try {
+			const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+			await axios.delete(`${baseUrl}/coditor/admin/problems/testcases/${testcaseId}`);
+			alert('테스트케이스가 삭제되었습니다.');
+			setExistingTestCases(existingTestCases.filter(tc => tc.id !== testcaseId));
+		} catch (error) {
+			console.error('테스트케이스 삭제 실패:', error);
+			alert('삭제에 실패했습니다.');
+		}
+	};
+
+	// 🚀 폼 제출 (수정)
 	const handleSubmit = async (e) => {
 		e.preventDefault();
-
 		try {
 			const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
-			// 문제 기본 정보 생성
 			const requestData = {
-				title,
-				content,
-				inputDesc,
-				outputDesc,
-				level,
-				timeLimit,
-				memoryLimit,
-				isVisible,
-				tags: selectedTags,
-				examples
+				title, content, inputDesc, outputDesc,
+				level, timeLimit, memoryLimit, isVisible,
+				tags: selectedTags, examples
 			};
 
-			console.log("1단계: 문제 기본 정보 전송 중...", requestData);
-			const problemResponse = await axios.post(`${baseUrl}/coditor/admin/problems`, requestData);
-			const createdProblemId = problemResponse.data.id;
+			console.log("1단계: 문제 기본 정보 수정 중...");
+			await axios.patch(`${baseUrl}/coditor/admin/problems/${id}`, requestData);
 
-			console.log(`문제 생성 완료 (ID: ${createdProblemId})`);
-
-			// 테스트케이스 파일 업로드
 			if (inputFile && outputFile) {
-				console.log("2단계: 테스트케이스 파일 전송 중...");
-				// const formData = new FormData();
-				// formData.append('inputFile', inputFile);
-				// formData.append('outputFile', outputFile);
-				//
-				// await axios.post(`${baseUrl}/coditor/admin/problems/${createdProblemId}/testcases`, formData, {
-				// 	headers: { 'Content-Type': 'multipart/form-data' }
-				// });
-				// console.log("테스트케이스 파일 업로드 완료");
+				console.log("2단계: 테스트케이스 파일 전송 중... ");
+				/*
+				const formData = new FormData();
+				formData.append('inputFile', inputFile);
+				formData.append('outputFile', outputFile);
+
+				await axios.post(`${baseUrl}/coditor/admin/problems/${id}/testcases`, formData, {
+					headers: { 'Content-Type': 'multipart/form-data' }
+				});
+				*/
 			}
 
-			alert('문제가 성공적으로 등록되었습니다!');
-			navigate(`/problems/${createdProblemId}`);
+			alert('문제가 성공적으로 수정되었습니다!');
+			navigate(`/problems/${id}`);
 
 		} catch (error) {
-			console.error('문제 등록 실패:', error);
-			alert('문제 등록 중 오류가 발생했습니다.');
+			console.error('문제 수정 실패:', error);
+			alert('문제 수정 중 오류가 발생했습니다.');
 		}
 	};
 
 	return (
 		<div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px' }}>
-			<h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>🚀 문제 등록 (관리자)</h1>
-			<p style={{ color: '#666', marginBottom: '32px' }}>문제를 생성하고 테스트케이스 파일을 업로드합니다.</p>
+			<h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>✏️ 문제 수정 (관리자)</h1>
+			<p style={{ color: '#666', marginBottom: '32px' }}>기존 문제의 정보와 테스트케이스를 수정합니다.</p>
 
 			<form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
 
@@ -150,7 +184,7 @@ const ProblemCreateForm = () => {
 										onChange={e => setIsVisible(e.target.checked)}
 										style={{ width: '18px', height: '18px', cursor: 'pointer' }}
 									/>
-									등록 시 사용자에게 공개 (체크 해제 시 비공개)
+									수정 후 사용자에게 공개 (체크 해제 시 비공개)
 								</label>
 							</div>
 						</div>
@@ -181,7 +215,6 @@ const ProblemCreateForm = () => {
 									})
 								)}
 							</div>
-							<p style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>* 등록된 태그를 클릭하여 선택하거나 해제하세요.</p>
 						</div>
 					</div>
 				</section>
@@ -192,15 +225,15 @@ const ProblemCreateForm = () => {
 					<div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 						<div>
 							<label style={styles.label}>본문 내용</label>
-							<textarea required style={styles.textarea} value={content} onChange={e => setContent(e.target.value)} rows="6" placeholder="문제 설명을 마크다운으로 작성하세요..." />
+							<textarea required style={styles.textarea} value={content} onChange={e => setContent(e.target.value)} rows="6" />
 						</div>
 						<div>
 							<label style={styles.label}>입력 설명</label>
-							<textarea style={styles.textarea} value={inputDesc} onChange={e => setInputDesc(e.target.value)} rows="3" placeholder="입력값에 대한 설명..." />
+							<textarea style={styles.textarea} value={inputDesc} onChange={e => setInputDesc(e.target.value)} rows="3" />
 						</div>
 						<div>
 							<label style={styles.label}>출력 설명</label>
-							<textarea style={styles.textarea} value={outputDesc} onChange={e => setOutputDesc(e.target.value)} rows="3" placeholder="출력값에 대한 설명..." />
+							<textarea style={styles.textarea} value={outputDesc} onChange={e => setOutputDesc(e.target.value)} rows="3" />
 						</div>
 					</div>
 				</section>
@@ -230,23 +263,50 @@ const ProblemCreateForm = () => {
 
 				{/* 4. 테스트케이스 파일 업로드 */}
 				<section style={{ backgroundColor: '#eef2ff', padding: '24px', borderRadius: '8px', border: '1px solid #c7d2fe' }}>
-					<h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: '#3730a3' }}>4. 채점용 테스트케이스 </h2>
+					<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+						<h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#3730a3' }}>4. 채점용 테스트케이스 관리</h2>
+					</div>
 
-					<div style={{ display: 'flex', gap: '24px' }}>
-						<div style={{ flex: 1, backgroundColor: '#fff', padding: '16px', borderRadius: '4px', border: '1px dashed #a5b4fc' }}>
-							<label style={{ ...styles.label, color: '#3730a3' }}>📄 입력 파일 </label>
-							<input type="file"  onChange={e => setInputFile(e.target.files[0])} accept=".txt" />
-						</div>
-						<div style={{ flex: 1, backgroundColor: '#fff', padding: '16px', borderRadius: '4px', border: '1px dashed #a5b4fc' }}>
-							<label style={{ ...styles.label, color: '#3730a3' }}>📄 정답 파일 </label>
-							<input type="file"  onChange={e => setOutputFile(e.target.files[0])} accept=".txt" />
+					{/* 등록된 테스트케이스 목록 */}
+					<div style={{ marginBottom: '20px' }}>
+						<label style={{ ...styles.label, color: '#4f46e5' }}>💾 등록된 테스트케이스</label>
+						{existingTestCases.length > 0 ? (
+							<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+								{existingTestCases.map((tc) => (
+									<div key={tc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#fff', border: '1px solid #a5b4fc', borderRadius: '4px' }}>
+										<span style={{ fontSize: '14px', fontWeight: '500' }}>TC #{tc.id} (Input / Output 파일)</span>
+										<button type="button" onClick={() => handleDeleteTestCase(tc.id)} style={{ padding: '4px 8px', backgroundColor: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
+											삭제
+										</button>
+									</div>
+								))}
+							</div>
+						) : (
+							<div style={{ padding: '12px', backgroundColor: '#fff', border: '1px dashed #a5b4fc', borderRadius: '4px', color: '#6b7280', fontSize: '14px', textAlign: 'center' }}>
+								등록된 테스트케이스가 없습니다.
+							</div>
+						)}
+					</div>
+
+					{/* 신규 테스트케이스 추가 영역 */}
+					<div>
+						<label style={{ ...styles.label, color: '#4f46e5' }}>➕ 신규 테스트케이스 추가 (선택)</label>
+						<div style={{ display: 'flex', gap: '24px' }}>
+							<div style={{ flex: 1, backgroundColor: '#fff', padding: '16px', borderRadius: '4px', border: '1px dashed #a5b4fc' }}>
+								<label style={{ ...styles.label, color: '#3730a3' }}>📄 입력 파일 (.txt) </label>
+								<input type="file" onChange={e => setInputFile(e.target.files[0])} accept=".txt" />
+							</div>
+							<div style={{ flex: 1, backgroundColor: '#fff', padding: '16px', borderRadius: '4px', border: '1px dashed #a5b4fc' }}>
+								<label style={{ ...styles.label, color: '#3730a3' }}>📄 정답 파일 (.txt) </label>
+								<input type="file" onChange={e => setOutputFile(e.target.files[0])} accept=".txt" />
+							</div>
 						</div>
 					</div>
 				</section>
 
 				{/* 제출 버튼 */}
 				<button type="submit" style={{ padding: '16px', backgroundColor: '#2563eb', color: '#fff', fontSize: '18px', fontWeight: 'bold', border: 'none', borderRadius: '8px', cursor: 'pointer', marginTop: '16px' }}>
-					문제 및 테스트케이스 등록하기
+					문제 수정 완료하기
 				</button>
 			</form>
 		</div>
@@ -263,4 +323,4 @@ const styles = {
 	tagButton: { padding: '6px 12px', borderRadius: '16px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', transition: 'all 0.2s' }
 };
 
-export default ProblemCreateForm;
+export default ProblemEditForm;
