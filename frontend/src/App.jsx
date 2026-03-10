@@ -10,6 +10,8 @@ import ProblemEditPage from './pages/ProblemEditPage';
 import PostListPage from './pages/PostListPage';
 import PostDetailPage from './pages/PostDetailPage';
 import PostFormPage from "./pages/PostFormPage.jsx";
+import Navbar from "./components/Navbar";
+import "./styles/global.css";
 
 
 // 1. 토큰을 감시하고 저장하는 별도의 핸들러 컴포넌트
@@ -46,7 +48,7 @@ const App = () => {
 		<BrowserRouter>
 			{/* 2. 모든 라우트 상단에서 AuthHandler가 동작하도록 배치 */}
 			<AuthHandler />
-
+			<Navbar />
 			<Routes>
 				<Route path="/" element={<MainPage />} />
 				<Route path="/problems" element={<ProblemListPage />} />
