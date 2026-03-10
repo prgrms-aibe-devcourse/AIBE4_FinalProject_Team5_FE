@@ -3,22 +3,26 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: "새로운 댓글이 달렸습니다", isRead: false },
-    { id: 2, message: "문제 풀이 결과가 업데이트되었습니다", isRead: false },
-    { id: 3, message: "공지사항이 등록되었습니다", isRead: true },
-  ]);
+  const [notifications, setNotifications] = useState([]);
 
   const navigate = useNavigate();
   const notificationRef = useRef(null);
+  const eventSourceRef = useRef(null);
 
-  const isLogin = !!localStorage.getItem("accessToken");
+  const accessToken = localStorage.getItem("accessToken");
+  const isLogin = !!accessToken;
 
   const unreadCount = notifications.filter((item) => !item.isRead).length;
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+
     navigate("/");
   };
 
@@ -26,12 +30,51 @@ const Navbar = () => {
     setShowNotifications((prev) => !prev);
   };
 
-  const handleNotificationClick = (id) => {
-    setNotifications((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, isRead: true } : item
-      )
-    );
+  const fetchNotifications = async () => {
+    if (!accessToken) return;
+
+    try {
+      const response = await fetch("/api/notifications", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("알림 목록 조회 실패");
+      }
+
+      const data = await response.json();
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("알림 목록 조회 중 오류:", error);
+    }
+  };
+
+  const handleNotificationClick = async (id) => {
+    try {
+      const response = await fetch(`/api/notifications/${id}/read`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("알림 읽음 처리 실패");
+      }
+
+      setNotifications((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, isRead: true } : item
+        )
+      );
+    } catch (error) {
+      console.error("알림 읽음 처리 중 오류:", error);
+    }
   };
 
   useEffect(() => {
@@ -45,34 +88,42 @@ const Navbar = () => {
     };
 
     document.addEventListener("mousedown", handleClickOutside);
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const sampleMessages = [
-        "새로운 답변이 등록되었습니다",
-        "내가 작성한 글에 좋아요가 추가되었습니다",
-        "오늘의 추천 문제가 도착했습니다",
-        "운영자 공지가 새로 올라왔습니다",
-      ];
+    if (!isLogin) return;
 
-      const randomMessage =
-        sampleMessages[Math.floor(Math.random() * sampleMessages.length)];
+    fetchNotifications();
 
-      const newNotification = {
-        id: Date.now(),
-        message: randomMessage,
-        isRead: false,
-      };
+    const eventSource = new EventSource("/api/notifications/stream", {
+        withCredentials: true,
+    });
 
-      setNotifications((prev) => [newNotification, ...prev].slice(0, 10));
-    }, 15000);
+    eventSource.onmessage = (event) => {
+      try {
+        const newNotification = JSON.parse(event.data);
 
-    return () => clearInterval(interval);
-  }, []);
+        setNotifications((prev) => [newNotification, ...prev]);
+      } catch (error) {
+        console.error("실시간 알림 파싱 오류:", error);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error("SSE 연결 오류:", error);
+    };
+
+    eventSourceRef.current = eventSource;
+
+    return () => {
+      eventSource.close();
+      eventSourceRef.current = null;
+    };
+  }, [isLogin, accessToken]);
 
   return (
     <nav className="navbar">
@@ -81,15 +132,24 @@ const Navbar = () => {
           Coditor
         </NavLink>
 
-        <NavLink to="/" className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
+        <NavLink
+          to="/"
+          className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
+        >
           메인페이지
         </NavLink>
 
-        <NavLink to="/problems" className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
+        <NavLink
+          to="/problems"
+          className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
+        >
           문제
         </NavLink>
 
-        <NavLink to="/community" className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
+        <NavLink
+          to="/community"
+          className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
+        >
           커뮤니티
         </NavLink>
       </div>
@@ -105,7 +165,9 @@ const Navbar = () => {
             >
               🔔
               {unreadCount > 0 && (
-                <span className="notification-badge">{unreadCount}</span>
+                <span className="notification-badge">
+                  {unreadCount}
+                </span>
               )}
             </button>
 
@@ -141,7 +203,11 @@ const Navbar = () => {
               마이페이지
             </NavLink>
 
-            <button type="button" className="logout-btn" onClick={handleLogout}>
+            <button
+              type="button"
+              className="logout-btn"
+              onClick={handleLogout}
+            >
               로그아웃
             </button>
           </>
