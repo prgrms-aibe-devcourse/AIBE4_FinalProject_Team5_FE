@@ -1,38 +1,206 @@
+/* ===== Theme Colors ===== */
+
 :root {
-	--primary-color: #2563eb;
-	--background-color: #f8fafc;
-	--surface-color: #ffffff;
-	--text-primary: #1e293b;
-	--text-secondary: #64748b;
-	--border-color: #e2e8f0;
-	--header-height: 60px;
+  --color-bg-main: #d9d9d9;
+  --color-bg-light: #e5e5e5;
+  --color-bg-card: #cfc7b7;
+  --color-bg-dark: #a9a291;
+
+  --color-text-main: #222;
+  --color-text-light: #666;
+
+  --color-accent: #000;
+  --color-border: #bfbfbf;
+
+  /* 기존 레이아웃용 alias */
+  --background-color: #d9d9d9;
+  --surface-color: #f4f2ec;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --text-primary: #222;
+  --text-secondary: #666;
 }
 
+/* ===== Reset ===== */
+
 * {
-	margin: 0;
-	padding: 0;
-	box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
-	font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-	background-color: var(--background-color);
-	color: var(--text-primary);
-	line-height: 1.5;
-	-webkit-font-smoothing: antialiased;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* 기본 레이아웃 */
+/* ===== 기본 레이아웃 ===== */
+
 .container {
-	max-width: 1200px;
-	margin: 0 auto;
-	padding: 20px;
+  max-width: 1200px;
+  margin: 24px auto;
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 14px;
 }
 
 .card {
-	background-color: var(--surface-color);
-	border: 1px solid var(--border-color);
-	border-radius: 8px;
-	padding: 24px;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: var(--surface-color);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* ===== Navbar ===== */
+
+.navbar {
+  height: 60px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 32px;
+  background: var(--color-bg-light);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--color-text-main);
+}
+
+.nav-item {
+  text-decoration: none;
+  color: var(--color-text-main);
+  font-size: 15px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+  padding-bottom: 3px;
+}
+
+.nav-item:hover {
+  color: var(--color-accent);
+}
+
+.nav-item.active {
+  font-weight: 700;
+  border-bottom: 2px solid var(--color-accent);
+}
+
+.login-btn {
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: var(--color-accent);
+  color: white;
+  font-size: 14px;
+}
+
+.logout-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-text-main);
+}
+
+/* ===== Notification ===== */
+
+.notification-wrapper {
+  position: relative;
+}
+
+.notification-button {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  min-width: 18px;
+  height: 18px;
+  background: #d63b3b;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-dropdown {
+  position: absolute;
+  right: 0;
+  top: 38px;
+  width: 280px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.notification-dropdown-header {
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: #faf9f6;
+}
+
+.notification-item {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  font-size: 14px;
+  border: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: #fff;
+  cursor: pointer;
+  color: var(--color-text-main);
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item:hover {
+  background: var(--color-bg-light);
+}
+
+.notification-item.unread {
+  background: #f7f5ef;
+  font-weight: 600;
+}
+
+.notification-empty {
+  padding: 16px 14px;
+  font-size: 14px;
+  color: var(--color-text-light);
 }
