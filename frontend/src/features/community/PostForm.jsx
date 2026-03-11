@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { Editor } from '@toast-ui/react-editor';
+import '@toast-ui/editor/dist/toastui-editor.css';
 
 const PostForm = () => {
 	const navigate = useNavigate();
@@ -14,6 +16,9 @@ const PostForm = () => {
 
 	const [title, setTitle] = useState('');
 	const [content, setContent] = useState('');
+
+	const [isLoading, setIsLoading] = useState(isEditMode);
+	const editorRef = useRef(null);
 
 	const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
@@ -29,6 +34,8 @@ const PostForm = () => {
 					console.error('게시글 정보를 불러오지 못했습니다.', error);
 					alert('게시글을 불러오지 못했습니다.');
 					navigate('/community');
+				} finally {
+					setIsLoading(false);
 				}
 			};
 			fetchPost();
@@ -39,6 +46,8 @@ const PostForm = () => {
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 
+		const currentContent = editorRef.current?.getInstance().getMarkdown() || '';
+
 		if (!title.trim() || !content.trim()) {
 			alert('제목과 내용을 모두 입력해주세요.');
 			return;
@@ -48,7 +57,7 @@ const PostForm = () => {
 			if (isEditMode) {
 				await axios.patch(`${baseUrl}/coditor/posts/${id}`, {
 					title,
-					content
+					content: currentContent
 				});
 				alert('게시글이 성공적으로 수정되었습니다.');
 				navigate(`/posts/${id}`);
@@ -56,7 +65,7 @@ const PostForm = () => {
 				const response = await axios.post(`${baseUrl}/coditor/posts`, {
 					problemId: linkedProblemId,
 					title,
-					content
+					content: currentContent
 				});
 				alert('새 게시글이 등록되었습니다.');
 				navigate(`/posts/${response.data.id}`);
@@ -66,6 +75,10 @@ const PostForm = () => {
 			alert('게시글 저장에 실패했습니다.');
 		}
 	};
+
+	if (isLoading) {
+		return <div style={{ textAlign: 'center', padding: '50px' }}>데이터를 불러오는 중입니다...</div>;
+	}
 
 	return (
 		<div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px' }}>
@@ -100,12 +113,14 @@ const PostForm = () => {
 					<label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#374151' }}>
 						내용
 					</label>
-					<textarea
-						value={content}
-						onChange={(e) => setContent(e.target.value)}
+					<Editor
+						ref={editorRef}
+						initialValue={content || " "}
 						placeholder="내용을 입력하세요."
-						rows="15"
-						style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '16px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }}
+						previewStyle="vertical"
+						height="500px"
+						initialEditType="wysiwyg"
+						useCommandShortcut={true}
 					/>
 				</div>
 

@@ -188,11 +188,11 @@ const ProblemCreateForm = () => {
 
 				{/* 2. 문제 설명 섹션 */}
 				<section style={styles.section}>
-					<h2 style={styles.sectionTitle}>2. 문제 설명 (Markdown 지원)</h2>
+					<h2 style={styles.sectionTitle}>2. 문제 설명</h2>
 					<div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 						<div>
 							<label style={styles.label}>본문 내용</label>
-							<textarea required style={styles.textarea} value={content} onChange={e => setContent(e.target.value)} rows="6" placeholder="문제 설명을 마크다운으로 작성하세요..." />
+							<textarea required style={styles.textarea} value={content} onChange={e => setContent(e.target.value)} rows="6" placeholder="문제 내용을 작성하세요..." />
 						</div>
 						<div>
 							<label style={styles.label}>입력 설명</label>
