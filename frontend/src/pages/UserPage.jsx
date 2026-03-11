@@ -5,33 +5,7 @@ import { useNavigate } from 'react-router-dom';
 // 백엔드 API 주소 (환경에 맞게 수정 필요)
 const API_BASE_URL = 'http://localhost:8080';
 
-/* ───────────────────────────────────────────
-   더미 데이터 (잔디, 문제 목록)
-─────────────────────────────────────────── */
-const generateDummyActivity = () => {
-	const data = {};
-	const today = new Date();
-	for (let i = 0; i < 364; i++) {
-		if (Math.random() > 0.6) {
-			const d = new Date(today);
-			d.setDate(today.getDate() - i);
-			data[d.toISOString().slice(0, 10)] = Math.floor(Math.random() * 8) + 1;
-		}
-	}
-	return data;
-};
-
-const dummyProblems = [
-	{ id: 1, title: '두 수의 합',    level: 1,   solvedAt: '2025-03-01', language: 'Python' },
-	{ id: 2, title: '피보나치 수열', level: 2,   solvedAt: '2025-03-02', language: 'JavaScript' },
-	{ id: 3, title: '이진 탐색',     level: 2,   solvedAt: '2025-03-03', language: 'Java' },
-	{ id: 4, title: '최단 경로',     level: 3, solvedAt: '2025-03-04', language: 'C++' },
-	{ id: 5, title: '문자열 뒤집기', level: 1,   solvedAt: '2025-03-05', language: 'Python' },
-	{ id: 6, title: '스택 구현',     level: 1,   solvedAt: '2025-03-05', language: 'JavaScript' },
-];
-
 const levelColor = { '쉬움': '#16a34a', '보통': '#d97706', '어려움': '#dc2626' };
-const activityData = generateDummyActivity();
 
 /* ───────────────────────────────────────────
    잔디 컴포넌트
@@ -134,7 +108,6 @@ const EditProfileModal = ({ profile, isSocial, onSave, onClose }) => {
 			setMsg('❌ 비밀번호가 일치하지 않습니다.');
 			return;
 		}
-		// password가 비어있으면, 서버로 전송하지 않도록 null 처리
 		const dataToSave = {
 			nickname: form.nickname,
 			phoneNumber: form.phoneNumber,
@@ -194,20 +167,37 @@ const UserPage = () => {
 	const navigate = useNavigate();
 	const [profile, setProfile] = useState(null);
 	const [showModal, setShowModal] = useState(false);
+	const [activityData, setActivityData] = useState({});
+	const [solvedProblems, setSolvedProblems] = useState([]);
 
-	const fetchUserProfile = async () => {
+	const fetchUserPageData = async () => {
 		const accessToken = localStorage.getItem('accessToken');
 		if (!accessToken) {
 			navigate('/login');
 			return;
 		}
+
+		const headers = { 'Authorization': `Bearer ${accessToken}` };
+
 		try {
-			const response = await axios.get(`${API_BASE_URL}/api/user/info`, {
-				headers: { 'Authorization': `Bearer ${accessToken}` }
-			});
-			setProfile(response.data);
+			const [profileRes, activityRes, problemsRes] = await Promise.all([
+				axios.get(`${API_BASE_URL}/api/user/info`, { headers }),
+				axios.get(`${API_BASE_URL}/api/user/activity`, { headers }),
+				axios.get(`${API_BASE_URL}/api/user/solved-problems`, { headers })
+			]);
+
+			setProfile(profileRes.data);
+
+			const formattedActivity = activityRes.data.reduce((acc, item) => {
+				acc[item.date] = item.count;
+				return acc;
+			}, {});
+			setActivityData(formattedActivity);
+
+			setSolvedProblems(problemsRes.data);
+
 		} catch (error) {
-			console.error('Failed to fetch user profile:', error);
+			console.error('Failed to fetch user page data:', error);
 			if (error.response && error.response.status === 401) {
 				navigate('/login');
 			}
@@ -215,7 +205,7 @@ const UserPage = () => {
 	};
 
 	useEffect(() => {
-		fetchUserProfile();
+		fetchUserPageData();
 	}, [navigate]);
 
 	const handleSaveProfile = async (updatedData) => {
@@ -224,8 +214,7 @@ const UserPage = () => {
 			await axios.put(`${API_BASE_URL}/api/user/info`, updatedData, {
 				headers: { 'Authorization': `Bearer ${accessToken}` }
 			});
-			// 저장 후 프로필 정보 다시 불러오기
-			await fetchUserProfile();
+			await fetchUserPageData(); // 정보 수정 후 전체 데이터 다시 로드
 			alert('회원정보가 성공적으로 수정되었습니다.');
 		} catch (error) {
 			console.error('Failed to update profile:', error);
@@ -263,6 +252,15 @@ const UserPage = () => {
 		return <div style={{textAlign: 'center', marginTop: '50px'}}>Loading...</div>;
 	}
 
+	const getLevelText = (level) => {
+		switch (level) {
+			case 1: return '쉬움';
+			case 2: return '보통';
+			case 3: return '어려움';
+			default: return '알 수 없음';
+		}
+	};
+
 	return (
 		<div style={{ maxWidth: '820px', margin: '40px auto', padding: '0 16px', fontFamily: 'sans-serif' }}>
 			<div style={cs.card}>
@@ -290,7 +288,7 @@ const UserPage = () => {
 			<div style={cs.section}>
 				<p style={cs.sectionTitle}>
 					푼 문제 목록
-					<span style={cs.sectionSub}>&nbsp;· 총 <strong>{dummyProblems.length}</strong>문제</span>
+					<span style={cs.sectionSub}>&nbsp;· 총 <strong>{solvedProblems.length}</strong>문제</span>
 				</p>
 				<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
 					<thead>
@@ -299,11 +297,15 @@ const UserPage = () => {
 					</tr>
 					</thead>
 					<tbody>
-					{dummyProblems.map((p, i) => (
+					{solvedProblems.map((p, i) => (
 						<tr key={p.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
 							<td style={{ padding: '9px 12px', color: '#999' }}>{i + 1}</td>
 							<td style={{ padding: '9px 12px' }}>{p.title}</td>
-							<td style={{ padding: '9px 12px' }}><span style={{ color: levelColor[p.level], fontWeight: '500' }}>{p.level}</span></td>
+							<td style={{ padding: '9px 12px' }}>
+                        <span style={{ color: levelColor[getLevelText(p.level)], fontWeight: '500' }}>
+                           {getLevelText(p.level)}
+                        </span>
+							</td>
 							<td style={{ padding: '9px 12px', color: '#555' }}>{p.language}</td>
 							<td style={{ padding: '9px 12px', color: '#888' }}>{p.solvedAt}</td>
 						</tr>
@@ -323,7 +325,7 @@ const UserPage = () => {
 
 			<div style={{ marginTop: '30px', textAlign: 'center' }}>
 				<button onClick={handleLogout} style={{ padding: '12px 24px', backgroundColor: '#64748b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '1rem', fontWeight: '600' }}>
-					로그아웃
+					테스트용 로그아웃
 				</button>
 			</div>
 		</div>
