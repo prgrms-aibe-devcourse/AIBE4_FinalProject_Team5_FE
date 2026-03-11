@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuthStore } from '../auth/authStore';
+import '@toast-ui/editor/dist/toastui-editor-viewer.css';
+import { Viewer } from '@toast-ui/react-editor';
 
 const CommentItem = ({
 						 comment,
@@ -276,8 +278,8 @@ const PostDetail = () => {
 				</div>
 
 				{/* 본문 내용 */}
-				<div style={{ fontSize: '16px', lineHeight: '1.6', color: '#1f2937', minHeight: '150px', whiteSpace: 'pre-wrap' }}>
-					{post.content}
+				<div style={{ fontSize: '16px', lineHeight: '1.6', color: '#1f2937', minHeight: '150px' }}>
+					{post.content && <Viewer initialValue={post.content} />}
 				</div>
 			</div>
 
