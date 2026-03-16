@@ -9,7 +9,8 @@ const PostList = () => {
 	const [posts, setPosts] = useState([]);
 	const [currentPage, setCurrentPage] = useState(0);
 	const [totalPages, setTotalPages] = useState(0);
-	const [searchKeyword, setSearchKeyword] = useState('');
+	const [searchInput, setSearchInput] = useState('');
+	const [searchTerm, setSearchTerm] = useState('');
 
 	// 게시글 목록 불러오기
 	useEffect(() => {
@@ -17,7 +18,10 @@ const PostList = () => {
 			try {
 				const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
-				const response = await axios.get(`${baseUrl}/coditor/posts?page=${currentPage}`);
+				const params = { page: currentPage };
+				if (searchTerm) params.keyword = searchTerm;
+
+				const response = await axios.get(`${baseUrl}/coditor/posts`, { params });
 
 				setPosts(response.data.content || []);
 				setTotalPages(response.data.totalPages || 0);
@@ -27,7 +31,7 @@ const PostList = () => {
 		};
 
 		fetchPosts();
-	}, [currentPage]);
+	}, [currentPage, searchTerm]);
 
 	const formatDate = (dateString) => {
 		if (!dateString) return '';
@@ -52,10 +56,15 @@ const PostList = () => {
 				<input
 					type="text"
 					placeholder="🔍 게시글 검색... "
-					value={searchKeyword}
-					onChange={(e) => setSearchKeyword(e.target.value)}
+					value={searchInput}
+					onChange={(e) => setSearchInput(e.target.value)}
+					onKeyDown={(e) => {
+						if (e.key === 'Enter') {
+							setSearchTerm(searchInput);
+							setCurrentPage(0);
+						}
+					}}
 					style={{ width: '100%', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '15px', boxSizing: 'border-box' }}
-					disabled // 추후 수정
 				/>
 			</div>
 
@@ -94,7 +103,7 @@ const PostList = () => {
 			</div>
 
 			{/* 페이지네이션 */}
-			{totalPages > 1 && (
+			{totalPages > 0 && (
 				<div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '32px' }}>
 					<button
 						onClick={() => setCurrentPage(prev => Math.max(prev - 1, 0))}

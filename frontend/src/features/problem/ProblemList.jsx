@@ -79,7 +79,7 @@ const ProblemList = () => {
 					<h3 style={{ fontSize: '14px', color: '#666', marginBottom: '12px' }}>난이도</h3>
 					<ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
 						<li
-							onClick={() => setSelectedLevel('전체')}
+							onClick={() => {setSelectedLevel('전체'); setCurrentPage(0);}}
 							style={{ cursor: 'pointer', padding: '8px 12px', borderRadius: '4px', backgroundColor: selectedLevel === '전체' ? '#eef2ff' : 'transparent', color: selectedLevel === '전체' ? '#4f46e5' : '#333' }}
 						>
 							전체
@@ -87,7 +87,7 @@ const ProblemList = () => {
 						{levelsList.map(level => (
 							<li
 								key={level}
-								onClick={() => setSelectedLevel(level)}
+								onClick={() => {setSelectedLevel(level); setCurrentPage(0);}}
 								style={{ cursor: 'pointer', padding: '8px 12px', borderRadius: '4px', backgroundColor: selectedLevel === level ? '#eef2ff' : 'transparent', color: selectedLevel === level ? '#4f46e5' : '#333' }}
 							>
 								Level {level}
@@ -101,7 +101,7 @@ const ProblemList = () => {
 					<h3 style={{ fontSize: '14px', color: '#666', marginBottom: '12px' }}>알고리즘 태그</h3>
 					<ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
 						<li
-							onClick={() => setSelectedTag('전체')}
+							onClick={() => {setSelectedTag('전체'); setCurrentPage(0);}}
 							style={{ cursor: 'pointer', padding: '8px 12px', borderRadius: '4px', backgroundColor: selectedTag === '전체' ? '#eef2ff' : 'transparent', color: selectedTag === '전체' ? '#4f46e5' : '#333' }}
 						>
 							전체
@@ -109,7 +109,7 @@ const ProblemList = () => {
 						{tagsList.map(tag => (
 							<li
 								key={tag}
-								onClick={() => setSelectedTag(tag)}
+								onClick={() => {setSelectedTag(tag); setCurrentPage(0);}}
 								style={{ cursor: 'pointer', padding: '8px 12px', borderRadius: '4px', backgroundColor: selectedTag === tag ? '#eef2ff' : 'transparent', color: selectedTag === tag ? '#4f46e5' : '#333' }}
 							>
 								{tag}
@@ -132,6 +132,7 @@ const ProblemList = () => {
 						onKeyDown={(e) => {
 							if (e.key === 'Enter') {
 								setSearchTerm(searchInput);
+								setCurrentPage(0);
 							}
 						}}
 						style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '16px' }}
