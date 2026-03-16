@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api/axiosConfig';
 import { Editor } from '@toast-ui/react-editor';
 import '@toast-ui/editor/dist/toastui-editor.css';
 
@@ -20,14 +20,12 @@ const PostForm = () => {
 	const [isLoading, setIsLoading] = useState(isEditMode);
 	const editorRef = useRef(null);
 
-	const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-
 	// 수정 모드
 	useEffect(() => {
 		if (isEditMode) {
 			const fetchPost = async () => {
 				try {
-					const response = await axios.get(`${baseUrl}/coditor/posts/${id}`);
+					const response = await api.get(`/coditor/posts/${id}`);
 					setTitle(response.data.title);
 					setContent(response.data.content);
 				} catch (error) {
@@ -40,7 +38,7 @@ const PostForm = () => {
 			};
 			fetchPost();
 		}
-	}, [id, isEditMode, baseUrl, navigate]);
+	}, [id, isEditMode, navigate]);
 
 	// 폼 제출 핸들러 (작성 및 수정 완료 버튼)
 	const handleSubmit = async (e) => {
@@ -55,14 +53,14 @@ const PostForm = () => {
 
 		try {
 			if (isEditMode) {
-				await axios.patch(`${baseUrl}/coditor/posts/${id}`, {
+				await api.patch(`/coditor/posts/${id}`, {
 					title,
 					content: currentContent
 				});
 				alert('게시글이 성공적으로 수정되었습니다.');
 				navigate(`/posts/${id}`);
 			} else {
-				const response = await axios.post(`${baseUrl}/coditor/posts`, {
+				const response = await api.post(`/coditor/posts`, {
 					problemId: linkedProblemId,
 					title,
 					content: currentContent

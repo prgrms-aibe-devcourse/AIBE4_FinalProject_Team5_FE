@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api/axiosConfig';
 import { useAuthStore } from '../auth/authStore';
 
 const ProblemCreateForm = () => {
 	const navigate = useNavigate();
 	const { user } = useAuthStore();
+	console.log("현재 로그인된 유저 정보:", user);
 
 	const [title, setTitle] = useState('');
 	const [level, setLevel] = useState(1);
@@ -29,8 +30,7 @@ const ProblemCreateForm = () => {
 	useEffect(() => {
 		const fetchTags = async () => {
 			try {
-				const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-				const response = await axios.get(`${baseUrl}/coditor/tags`);
+				const response = await api.get('/coditor/tags');
 				setDbTags(response.data);
 			} catch (error) {
 				console.error('태그 목록 불러오기 실패:', error);
@@ -39,7 +39,7 @@ const ProblemCreateForm = () => {
 		fetchTags();
 	}, []);
 
-	if (!user || user.role !== 'ADMIN') {
+	if (!user || (user.role !== 'ADMIN' && user.role !== 'ROLE_ADMIN')) {
 		return <div style={{ padding: '50px', textAlign: 'center', color: 'red' }}>관리자만 접근 가능한 페이지입니다.</div>;
 	}
 
@@ -66,8 +66,6 @@ const ProblemCreateForm = () => {
 		e.preventDefault();
 
 		try {
-			const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-
 			// 문제 기본 정보 생성
 			const requestData = {
 				title,
@@ -83,7 +81,7 @@ const ProblemCreateForm = () => {
 			};
 
 			console.log("1단계: 문제 기본 정보 전송 중...", requestData);
-			const problemResponse = await axios.post(`${baseUrl}/coditor/admin/problems`, requestData);
+			const problemResponse = await api.post('/coditor/admin/problems', requestData);
 			const createdProblemId = problemResponse.data.id;
 
 			console.log(`문제 생성 완료 (ID: ${createdProblemId})`);
@@ -95,9 +93,9 @@ const ProblemCreateForm = () => {
 				// formData.append('inputFile', inputFile);
 				// formData.append('outputFile', outputFile);
 				//
-				// await axios.post(`${baseUrl}/coditor/admin/problems/${createdProblemId}/testcases`, formData, {
-				// 	headers: { 'Content-Type': 'multipart/form-data' }
-				// });
+				// await api.post(`/coditor/admin/problems/${createdProblemId}/testcases`, formData, {
+				//              //     headers: { 'Content-Type': 'multipart/form-data' }
+				//              // });
 				// console.log("테스트케이스 파일 업로드 완료");
 			}
 

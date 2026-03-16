@@ -12,23 +12,34 @@ import PostDetailPage from './pages/PostDetailPage';
 import PostFormPage from "./pages/PostFormPage.jsx";
 import Navbar from "./components/Navbar";
 import "./styles/global.css";
-
+import { useAuthStore } from './features/auth/authStore';
 
 // 1. 토큰을 감시하고 저장하는 별도의 핸들러 컴포넌트
 const AuthHandler = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
+	const { login } = useAuthStore();
 
 	useEffect(() => {
 		const params = new URLSearchParams(location.search);
 		const accessToken = params.get('accessToken');
 		const refreshToken = params.get('refreshToken');
 		const error = params.get('error');
+		const nickname = params.get('nickname');
+		const role = params.get('role');
+		const memberId = params.get('memberId');
 
 		if (accessToken && refreshToken) {
 			// 로컬 스토리지에 토큰 저장
 			localStorage.setItem('accessToken', accessToken);
 			localStorage.setItem('refreshToken', refreshToken);
+			if (nickname) localStorage.setItem('nickname', nickname);
+			if (memberId) localStorage.setItem('memberId', memberId);
+			login({
+				nickname: nickname,
+				role: role || 'ROLE_USER',
+				memberId: Number(memberId)
+			});
 
 			console.log('소셜 로그인 성공: 토큰이 저장되었습니다.');
 

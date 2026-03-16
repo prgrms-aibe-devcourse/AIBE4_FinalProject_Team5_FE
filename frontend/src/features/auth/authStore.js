@@ -1,13 +1,23 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-// 임시 로그인 상태
-export const useAuthStore = create((set) => ({
-	user: {
-		memberId: 1,
-		nickname: "테스트관리자",
-		role: "ADMIN"
-	},
+export const useAuthStore = create(
+	persist(
+		(set) => ({
+			user: null,
 
-	login: (userData) => set({ user: userData }),
-	logout: () => set({ user: null })
-}));
+			login: (userData) => set({ user: userData }),
+
+			logout: () => {
+				set({ user: null });
+				localStorage.removeItem('accessToken');
+				localStorage.removeItem('refreshToken');
+				localStorage.removeItem('nickname');
+				localStorage.removeItem('memberId');
+			}
+		}),
+		{
+			name: 'auth-storage',
+		}
+	)
+);
