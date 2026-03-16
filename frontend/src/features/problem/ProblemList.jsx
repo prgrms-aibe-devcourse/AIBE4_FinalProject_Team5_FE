@@ -10,8 +10,12 @@ const ProblemList = () => {
 	const [error, setError] = useState(null);
 
 	const [searchTerm, setSearchTerm] = useState('');
+	const [searchInput, setSearchInput] = useState('');
 	const [selectedLevel, setSelectedLevel] = useState('전체');
 	const [selectedTag, setSelectedTag] = useState('전체');
+
+	const [currentPage, setCurrentPage] = useState(0);
+	const [totalPages, setTotalPages] = useState(0);
 
 	// 사용할 태그와 난이도 목록
 	const tagsList = ['해시', 'DP', '트리', '그래프', '스택', '탐색', '문자열', 'BFS', '배열'];
@@ -20,14 +24,24 @@ const ProblemList = () => {
 	// 2. 백엔드 API 호출
 	useEffect(() => {
 		const fetchProblems = async () => {
+			setIsLoading(true);
 			try {
 				const apiUrl = import.meta.env.VITE_API_BASE_URL
 					? `${import.meta.env.VITE_API_BASE_URL}/coditor/problems`
 					: 'http://localhost:8080/coditor/problems';
 
-				const response = await axios.get(apiUrl);
+				const params = {
+					page: currentPage,
+					size: 10 // 한 페이지에 보여줄 개수
+				};
+				if (searchTerm) params.keyword = searchTerm;
+				if (selectedLevel !== '전체') params.level = selectedLevel;
+				if (selectedTag !== '전체') params.tag = selectedTag;
 
-				setProblems(response.data);
+				const response = await axios.get(apiUrl, { params });
+
+				setProblems(response.data.content); // 실제 문제 데이터 리스트
+				setTotalPages(response.data.totalPages); // 전체 페이지 수
 			} catch (err) {
 				console.error('API 호출 에러:', err);
 				setError('문제 목록을 불러오는데 실패했습니다.');
@@ -37,19 +51,20 @@ const ProblemList = () => {
 		};
 
 		fetchProblems();
-	}, []);
 
-	// 3. 필터링 로직 (검색어 + 난이도 + 태그)
-	const filteredProblems = problems.filter((problem) => {
+	}, [searchTerm, selectedLevel, selectedTag, currentPage]);
 
-		const titleMatch = problem.title ? problem.title.includes(searchTerm) : false;
-		const levelMatch = selectedLevel === '전체' || problem.level === selectedLevel;
-		const tagMatch = selectedTag === '전체' || (problem.tags && problem.tags.includes(selectedTag));
+	// // 3. 필터링 로직 (검색어 + 난이도 + 태그)
+	// const filteredProblems = problems.filter((problem) => {
+	//
+	// 	const titleMatch = problem.title ? problem.title.includes(searchTerm) : false;
+	// 	const levelMatch = selectedLevel === '전체' || problem.level === selectedLevel;
+	// 	const tagMatch = selectedTag === '전체' || (problem.tags && problem.tags.includes(selectedTag));
+	//
+	// 	return titleMatch && levelMatch && tagMatch;
+	// });
 
-		return titleMatch && levelMatch && tagMatch;
-	});
-
-	if (isLoading) return <div style={{ padding: '50px', textAlign: 'center' }}>데이터를 불러오는 중입니다... ⏳</div>;
+	//if (isLoading) return <div style={{ padding: '50px', textAlign: 'center' }}>데이터를 불러오는 중입니다... ⏳</div>;
 	if (error) return <div style={{ padding: '50px', textAlign: 'center', color: 'red' }}>{error}</div>;
 
 	return (
@@ -112,14 +127,27 @@ const ProblemList = () => {
 					<input
 						type="text"
 						placeholder="🔍 문제 제목으로 검색..."
-						value={searchTerm}
-						onChange={(e) => setSearchTerm(e.target.value)}
+						value={searchInput}
+						onChange={(e) => setSearchInput(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === 'Enter') {
+								setSearchTerm(searchInput);
+							}
+						}}
 						style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '16px' }}
 					/>
 				</div>
 
 				{/* 문제 테이블 */}
-				<div style={{ border: '1px solid #eee', borderRadius: '8px', backgroundColor: '#fff', overflow: 'hidden' }}>
+				<div style={{ position: 'relative',
+					opacity: isLoading ? 0.5 : 1,
+					transition: 'opacity 0.2s', border: '1px solid #eee', borderRadius: '8px', backgroundColor: '#fff', overflow: 'hidden' }}>
+
+					{isLoading && (
+						<div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontWeight: 'bold', color: '#4f46e5' }}>
+							검색 중... ⏳
+						</div>
+					)}
 					<table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
 						<thead style={{ backgroundColor: '#f8f9fa', borderBottom: '1px solid #eee' }}>
 						<tr>
@@ -130,8 +158,8 @@ const ProblemList = () => {
 						</tr>
 						</thead>
 						<tbody>
-						{filteredProblems.length > 0 ? (
-							filteredProblems.map(problem => (
+						{problems.length > 0 ? (
+							problems.map(problem => (
 								<tr key={problem.id} style={{ borderBottom: '1px solid #eee' }}>
 									<td style={{ padding: '16px', textAlign: 'center' }}>
 										{/* 추후 isSolved 추가, 일단 - 상태로 고정 */}
@@ -162,6 +190,29 @@ const ProblemList = () => {
 						</tbody>
 					</table>
 				</div>
+				{totalPages > 0 && (
+					<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginTop: '24px' }}>
+						<button
+							onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+							disabled={currentPage === 0}
+							style={{ padding: '8px 16px', borderRadius: '4px', border: '1px solid #ddd', backgroundColor: currentPage === 0 ? '#f3f4f6' : '#fff', cursor: currentPage === 0 ? 'not-allowed' : 'pointer' }}
+						>
+							이전
+						</button>
+
+						<span style={{ fontSize: '15px', color: '#555' }}>
+                         {currentPage + 1} / {totalPages} 페이지
+                     </span>
+
+						<button
+							onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+							disabled={currentPage === totalPages - 1}
+							style={{ padding: '8px 16px', borderRadius: '4px', border: '1px solid #ddd', backgroundColor: currentPage === totalPages - 1 ? '#f3f4f6' : '#fff', cursor: currentPage === totalPages - 1 ? 'not-allowed' : 'pointer' }}
+						>
+							다음
+						</button>
+					</div>
+				)}
 			</main>
 
 		</div>
