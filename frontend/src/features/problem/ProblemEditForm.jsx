@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api/axiosConfig';
 import { useAuthStore } from '../auth/authStore';
 
 const ProblemEditForm = () => {
@@ -31,14 +31,12 @@ const ProblemEditForm = () => {
 	useEffect(() => {
 		const fetchProblemData = async () => {
 			try {
-				const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-
 				// 1. 전체 태그 목록 불러오기
-				const tagsRes = await axios.get(`${baseUrl}/coditor/tags`);
+				const tagsRes = await api.get('/coditor/tags');
 				setDbTags(tagsRes.data || []);
 
 				// 2. 문제 상세 정보 불러오기
-				const problemRes = await axios.get(`${baseUrl}/coditor/problems/${id}`);
+				const problemRes = await api.get(`/coditor/problems/${id}`);
 				const p = problemRes.data;
 
 				setTitle(p.title);
@@ -60,7 +58,7 @@ const ProblemEditForm = () => {
 				}
 
 				// 3. 기존 테스트케이스 목록 불러오기
-				const tcRes = await axios.get(`${baseUrl}/coditor/admin/problems/${id}/testcases`);
+				const tcRes = await api.get(`/coditor/admin/problems/${id}/testcases`);
 				setExistingTestCases(tcRes.data || []);
 
 			} catch (error) {
@@ -71,7 +69,7 @@ const ProblemEditForm = () => {
 		fetchProblemData();
 	}, [id]);
 
-	if (!user || user.role !== 'ADMIN') {
+	if (!user || (user.role !== 'ADMIN' && user.role !== 'ROLE_ADMIN')) {
 		return <div style={{ padding: '50px', textAlign: 'center', color: 'red' }}>관리자만 접근 가능한 페이지입니다.</div>;
 	}
 
@@ -97,8 +95,7 @@ const ProblemEditForm = () => {
 	const handleDeleteTestCase = async (testcaseId) => {
 		if (!window.confirm('정말 이 테스트케이스를 삭제하시겠습니까?')) return;
 		try {
-			const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-			await axios.delete(`${baseUrl}/coditor/admin/problems/testcases/${testcaseId}`);
+			await api.delete(`/coditor/admin/problems/testcases/${testcaseId}`);
 			alert('테스트케이스가 삭제되었습니다.');
 			setExistingTestCases(existingTestCases.filter(tc => tc.id !== testcaseId));
 		} catch (error) {
@@ -111,8 +108,6 @@ const ProblemEditForm = () => {
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 		try {
-			const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-
 			const requestData = {
 				title, content, inputDesc, outputDesc,
 				level, timeLimit, memoryLimit, isVisible,
@@ -120,7 +115,7 @@ const ProblemEditForm = () => {
 			};
 
 			console.log("1단계: 문제 기본 정보 수정 중...");
-			await axios.patch(`${baseUrl}/coditor/admin/problems/${id}`, requestData);
+			await api.patch(`/coditor/admin/problems/${id}`, requestData);
 
 			if (inputFile && outputFile) {
 				console.log("2단계: 테스트케이스 파일 전송 중... ");
@@ -129,7 +124,7 @@ const ProblemEditForm = () => {
 				formData.append('inputFile', inputFile);
 				formData.append('outputFile', outputFile);
 
-				await axios.post(`${baseUrl}/coditor/admin/problems/${id}/testcases`, formData, {
+				await api.post(`/coditor/admin/problems/${id}/testcases`, formData, {
 					headers: { 'Content-Type': 'multipart/form-data' }
 				});
 				*/

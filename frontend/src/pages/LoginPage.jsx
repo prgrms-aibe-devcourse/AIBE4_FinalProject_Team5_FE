@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/global.css';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuthStore } from '../features/auth/authStore';
 
 // 백엔드 API 주소 (환경에 맞게 수정 필요)
 const API_BASE_URL = 'http://localhost:8080';
@@ -157,6 +158,7 @@ const LoginPage = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
 
+	const { login } = useAuthStore();
 	// username -> email로 변경
 	const [form, setForm] = useState({ email: '', password: '' });
 	const [showPassword, setShowPassword] = useState(false);
@@ -168,12 +170,20 @@ const LoginPage = () => {
 		const accessToken = searchParams.get('accessToken');
 		const refreshToken = searchParams.get('refreshToken');
 		const nickname = searchParams.get('nickname');
+		const role = searchParams.get('role');
+
+		const memberId = searchParams.get('memberId');
 
 		if (accessToken) {
 			localStorage.setItem('accessToken', accessToken);
 			if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
 			if (nickname) localStorage.setItem('nickname', nickname);
 
+			login({
+				nickname: nickname,
+				role: role || 'ROLE_USER',
+				memberId: Number(memberId)
+			});
 			console.log('소셜 로그인 성공');
 			navigate('/UserPage');
 		}
@@ -199,6 +209,13 @@ const LoginPage = () => {
 				localStorage.setItem('accessToken', data.accessToken);
 				localStorage.setItem('refreshToken', data.refreshToken);
 				localStorage.setItem('nickname', data.nickname);
+				if (data.memberId) localStorage.setItem('memberId', data.memberId);
+				login({
+					email: form.email,
+					nickname: data.nickname,
+					role: data.role,
+					memberId: data.memberId
+				});
 
 				console.log('로그인 성공:', data);
 				navigate('/UserPage'); // 유저 페이지로 이동

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api/axiosConfig';
 import { useAuthStore } from '../auth/authStore';
 import '@toast-ui/editor/dist/toastui-editor-viewer.css';
 import { Viewer } from '@toast-ui/react-editor';
@@ -134,15 +134,13 @@ const PostDetail = () => {
 	const [replyingTo, setReplyingTo] = useState(null);
 	const [replyContent, setReplyContent] = useState('');
 
-	const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-
 	const { user } = useAuthStore();
 
 	const fetchPostAndComments = useCallback(async () => {
 		try {
 			const [postRes, commentsRes] = await Promise.all([
-				axios.get(`${baseUrl}/coditor/posts/${postId}`),
-				axios.get(`${baseUrl}/coditor/comments/post/${postId}`)
+				api.get(`/coditor/posts/${postId}`),
+				api.get(`/coditor/comments/post/${postId}`)
 			]);
 			setPost(postRes.data);
 			setComments(commentsRes.data || []);
@@ -151,7 +149,7 @@ const PostDetail = () => {
 			alert('게시글을 불러오지 못했습니다.');
 			navigate('/community');
 		}
-	}, [postId, baseUrl, navigate]);
+	}, [postId, navigate]);
 
 	useEffect(() => {
 		fetchPostAndComments();
@@ -171,7 +169,7 @@ const PostDetail = () => {
 		}
 
 		try {
-			await axios.post(`${baseUrl}/coditor/comments`, {
+			await api.post('/coditor/comments', {
 				postId: Number(postId),
 				parentId: parentId,
 				content: content
@@ -192,7 +190,7 @@ const PostDetail = () => {
 
 	const handleUpdateComment = async (commentId, updatedContent) => {
 		try {
-			await axios.patch(`${baseUrl}/coditor/comments/${commentId}`, { content: updatedContent });
+			await api.patch(`/coditor/comments/${commentId}`, { content: updatedContent });
 			fetchPostAndComments(); // 수정 후 새로고침
 		} catch (error) {
 			console.error('댓글 수정 실패:', error);
@@ -202,7 +200,7 @@ const PostDetail = () => {
 
 	const handleDeleteComment = async (commentId) => {
 		try {
-			await axios.delete(`${baseUrl}/coditor/comments/${commentId}`);
+			await api.delete(`/coditor/comments/${commentId}`);
 			fetchPostAndComments(); // 삭제 후 새로고침
 		} catch (error) {
 			console.error('댓글 삭제 실패:', error);
@@ -213,7 +211,7 @@ const PostDetail = () => {
 	const handleDeletePost = async () => {
 		if (window.confirm('정말 이 게시글을 삭제하시겠습니까?')) {
 			try {
-				await axios.delete(`${baseUrl}/coditor/posts/${postId}`);
+				await api.delete(`/coditor/posts/${postId}`);
 				alert('삭제되었습니다.');
 				navigate('/community'); // 삭제 후 목록
 			} catch (error) {
@@ -224,6 +222,8 @@ const PostDetail = () => {
 	};
 
 	if (!post) return <div style={{ textAlign: 'center', padding: '50px' }}>로딩 중...</div>;
+	console.log("1. 현재 로그인한 내 정보 (user):", user);
+	console.log("2. 게시글 정보 (post):", post);
 
 	// 게시글 작성자 권한 체크
 	const isAuthor = user && user.memberId === post.authorId;
