@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../features/auth/authStore';
 
 // 백엔드 API 주소 (환경에 맞게 수정 필요)
 const API_BASE_URL = 'http://localhost:8080';
@@ -169,6 +170,7 @@ const UserPage = () => {
 	const [showModal, setShowModal] = useState(false);
 	const [activityData, setActivityData] = useState({});
 	const [solvedProblems, setSolvedProblems] = useState([]);
+	const logout = useAuthStore((state) => state.logout);
 
 	const fetchUserPageData = async () => {
 		const accessToken = localStorage.getItem('accessToken');
@@ -244,6 +246,7 @@ const UserPage = () => {
 			localStorage.removeItem('accessToken');
 			localStorage.removeItem('refreshToken');
 			localStorage.removeItem('nickname');
+			logout();
 			navigate('/login');
 		}
 	};

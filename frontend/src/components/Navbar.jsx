@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { useAuthStore } from '../features/auth/authStore';
 
 const Navbar = () => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -14,6 +15,8 @@ const Navbar = () => {
 
   const unreadCount = notifications.filter((item) => !item.isRead).length;
 
+  const logout = useAuthStore((state) => state.logout);
+
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
@@ -22,6 +25,8 @@ const Navbar = () => {
       eventSourceRef.current.close();
       eventSourceRef.current = null;
     }
+
+	logout();
 
     navigate("/");
   };
