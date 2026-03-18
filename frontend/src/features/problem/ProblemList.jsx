@@ -152,7 +152,7 @@ const ProblemList = () => {
 					<table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
 						<thead style={{ backgroundColor: '#f8f9fa', borderBottom: '1px solid #eee' }}>
 						<tr>
-							<th style={{ padding: '16px', fontWeight: '500', color: '#555', width: '10%' }}>상태</th>
+							<th style={{ padding: '16px', fontWeight: '500', color: '#555', width: '10%' }}></th>
 							<th style={{ padding: '16px', fontWeight: '500', color: '#555', width: '50%' }}>문제 제목</th>
 							<th style={{ padding: '16px', fontWeight: '500', color: '#555', width: '15%' }}>난이도</th>
 							<th style={{ padding: '16px', fontWeight: '500', color: '#555', width: '25%' }}>카테고리</th>
@@ -163,8 +163,7 @@ const ProblemList = () => {
 							problems.map(problem => (
 								<tr key={problem.id} style={{ borderBottom: '1px solid #eee' }}>
 									<td style={{ padding: '16px', textAlign: 'center' }}>
-										{/* 추후 isSolved 추가, 일단 - 상태로 고정 */}
-										<span style={{ color: '#ccc' }}>-</span>
+										<span style={{ color: '#ccc' }}></span>
 									</td>
 									<td style={{ padding: '16px', fontWeight: '500', cursor: 'pointer', color: '#333' }} onClick={() => navigate(`/problems/${problem.id}`)}>
 										{problem.title}
