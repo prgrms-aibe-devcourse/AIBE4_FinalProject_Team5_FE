@@ -89,14 +89,14 @@ const ProblemCreateForm = () => {
 			// 테스트케이스 파일 업로드
 			if (inputFile && outputFile) {
 				console.log("2단계: 테스트케이스 파일 전송 중...");
-				// const formData = new FormData();
-				// formData.append('inputFile', inputFile);
-				// formData.append('outputFile', outputFile);
-				//
-				// await api.post(`/coditor/admin/problems/${createdProblemId}/testcases`, formData, {
-				//              //     headers: { 'Content-Type': 'multipart/form-data' }
-				//              // });
-				// console.log("테스트케이스 파일 업로드 완료");
+				const formData = new FormData();
+				formData.append('inputFile', inputFile);
+				formData.append('outputFile', outputFile);
+
+				await api.post(`/coditor/admin/problems/${createdProblemId}/testcases`, formData, {
+				                  headers: { 'Content-Type': 'multipart/form-data' }
+				              });
+				console.log("테스트케이스 파일 업로드 완료");
 			}
 
 			alert('문제가 성공적으로 등록되었습니다!');

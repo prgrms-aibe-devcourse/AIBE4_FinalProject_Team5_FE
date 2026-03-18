@@ -119,7 +119,7 @@ const ProblemEditForm = () => {
 
 			if (inputFile && outputFile) {
 				console.log("2단계: 테스트케이스 파일 전송 중... ");
-				/*
+
 				const formData = new FormData();
 				formData.append('inputFile', inputFile);
 				formData.append('outputFile', outputFile);
@@ -127,7 +127,7 @@ const ProblemEditForm = () => {
 				await api.post(`/coditor/admin/problems/${id}/testcases`, formData, {
 					headers: { 'Content-Type': 'multipart/form-data' }
 				});
-				*/
+
 			}
 
 			alert('문제가 성공적으로 수정되었습니다!');

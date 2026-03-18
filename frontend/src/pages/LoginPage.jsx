@@ -379,7 +379,7 @@ const styles = {
 		marginTop: '8px',
 		padding: '12px',
 		backgroundColor: 'var(--primary-color)',
-		color: '#fff',
+		color: '#333',
 		border: 'none',
 		borderRadius: '6px',
 		fontSize: '1rem',
