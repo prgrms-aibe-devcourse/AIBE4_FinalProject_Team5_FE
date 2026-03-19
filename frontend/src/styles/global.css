@@ -1,3 +1,4 @@
+@import url('https://cdn.jsdelivr.net/gh/MonadABXY/mona-font/web/mona.css');
 /* ===== Theme Colors ===== */
 
 :root {
@@ -29,7 +30,7 @@
 }
 
 body {
-  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  font-family: "Mona12", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
   background-color: var(--background-color);
   color: var(--text-primary);
   line-height: 1.5;

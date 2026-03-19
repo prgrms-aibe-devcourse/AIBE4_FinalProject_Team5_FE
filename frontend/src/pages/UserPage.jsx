@@ -45,7 +45,7 @@ const ActivityGrid = ({ data }) => {
 	const gridW = weeks * STEP - GAP, gridH = days * STEP - GAP, totalW = Y_LABEL_W + gridW, MONTH_ROW_H = 18;
 
 	return (
-		<div style={{ fontFamily: 'sans-serif' }}>
+		<div >
 			<svg width={totalW} height={MONTH_ROW_H + gridH + 24}>
 				{monthLabels.map(({ wi, label }) => (
 					<text key={wi} x={Y_LABEL_W + wi * STEP} y={12} fontSize="11" fill="#666">{label}</text>
@@ -265,7 +265,7 @@ const UserPage = () => {
 	};
 
 	return (
-		<div style={{ maxWidth: '820px', margin: '40px auto', padding: '0 16px', fontFamily: 'sans-serif' }}>
+		<div style={{ maxWidth: '820px', margin: '40px auto', padding: '0 16px' }}>
 			<div style={cs.card}>
 				<div style={cs.avatar}>{profile.nickname.slice(0, 1)}</div>
 				<div style={cs.info}>
