@@ -20,8 +20,10 @@ const ProblemCreateForm = () => {
 
 	const [examples, setExamples] = useState([{ inputExample: '', outputExample: '' }]);
 
-	const [inputFile, setInputFile] = useState(null);
-	const [outputFile, setOutputFile] = useState(null);
+	// const [inputFile, setInputFile] = useState(null);
+	// const [outputFile, setOutputFile] = useState(null);
+	const [inputFiles, setInputFiles] = useState([]);
+	const [outputFiles, setOutputFiles] = useState([]);
 
 	const [dbTags, setDbTags] = useState([]);
 	const [selectedTags, setSelectedTags] = useState([]);
@@ -61,6 +63,16 @@ const ProblemCreateForm = () => {
 		}
 	};
 
+	const handleFileChange = (e, setFiles) => {
+		const selectedFiles = Array.from(e.target.files);
+		if (selectedFiles.length > 10) {
+			alert("테스트케이스 파일은 한 번에 최대 10개까지만 업로드할 수 있습니다.");
+			e.target.value = '';
+			return;
+		}
+		setFiles(selectedFiles);
+	};
+
 	// 🚀 폼 제출
 	const handleSubmit = async (e) => {
 		e.preventDefault();
@@ -87,15 +99,27 @@ const ProblemCreateForm = () => {
 			console.log(`문제 생성 완료 (ID: ${createdProblemId})`);
 
 			// 테스트케이스 파일 업로드
-			if (inputFile && outputFile) {
+			// if (inputFile && outputFile) {
+			// 	console.log("2단계: 테스트케이스 파일 전송 중...");
+			// 	const formData = new FormData();
+			// 	formData.append('inputFile', inputFile);
+			// 	formData.append('outputFile', outputFile);
+			//
+			// 	await api.post(`/coditor/admin/problems/${createdProblemId}/testcases`, formData, {
+			// 	                  headers: { 'Content-Type': 'multipart/form-data' }
+			// 	              });
+			// 	console.log("테스트케이스 파일 업로드 완료");
+			// }
+			if (inputFiles.length > 0 && outputFiles.length > 0) {
 				console.log("2단계: 테스트케이스 파일 전송 중...");
 				const formData = new FormData();
-				formData.append('inputFile', inputFile);
-				formData.append('outputFile', outputFile);
+
+				inputFiles.forEach(file => formData.append('inputFiles', file));
+				outputFiles.forEach(file => formData.append('outputFiles', file));
 
 				await api.post(`/coditor/admin/problems/${createdProblemId}/testcases`, formData, {
-				                  headers: { 'Content-Type': 'multipart/form-data' }
-				              });
+					headers: { 'Content-Type': 'multipart/form-data' }
+				});
 				console.log("테스트케이스 파일 업로드 완료");
 			}
 
@@ -233,11 +257,35 @@ const ProblemCreateForm = () => {
 					<div style={{ display: 'flex', gap: '24px' }}>
 						<div style={{ flex: 1, backgroundColor: '#fff', padding: '16px', borderRadius: '4px', border: '1px dashed #a5b4fc' }}>
 							<label style={{ ...styles.label, color: '#3730a3' }}>📄 입력 파일 </label>
-							<input type="file"  onChange={e => setInputFile(e.target.files[0])} accept=".txt" />
+							<input type="file" multiple onChange={e => handleFileChange(e, setInputFiles)} accept=".txt" />
+							{inputFiles.length > 0 && (
+								<div style={{ marginTop: '12px', backgroundColor: '#f9fafb', padding: '8px', borderRadius: '4px' }}>
+									<p style={{ fontSize: '13px', fontWeight: 'bold', color: '#4f46e5', margin: '0 0 6px 0' }}>
+										선택된 파일 ({inputFiles.length}개):
+									</p>
+									<ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#4b5563', lineHeight: '1.5' }}>
+										{inputFiles.map((file, idx) => (
+											<li key={idx}>[#{idx + 1}] {file.name}</li>
+										))}
+									</ul>
+								</div>
+							)}
 						</div>
 						<div style={{ flex: 1, backgroundColor: '#fff', padding: '16px', borderRadius: '4px', border: '1px dashed #a5b4fc' }}>
 							<label style={{ ...styles.label, color: '#3730a3' }}>📄 정답 파일 </label>
-							<input type="file"  onChange={e => setOutputFile(e.target.files[0])} accept=".txt" />
+							<input type="file" multiple onChange={e => handleFileChange(e, setOutputFiles)} accept=".txt" />
+							{outputFiles.length > 0 && (
+								<div style={{ marginTop: '12px', backgroundColor: '#f9fafb', padding: '8px', borderRadius: '4px' }}>
+									<p style={{ fontSize: '13px', fontWeight: 'bold', color: '#4f46e5', margin: '0 0 6px 0' }}>
+										선택된 파일 ({outputFiles.length}개):
+									</p>
+									<ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#4b5563', lineHeight: '1.5' }}>
+										{outputFiles.map((file, idx) => (
+											<li key={idx}>[#{idx + 1}] {file.name}</li>
+										))}
+									</ul>
+								</div>
+							)}
 						</div>
 					</div>
 				</section>
