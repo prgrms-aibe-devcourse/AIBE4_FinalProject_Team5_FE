@@ -4,6 +4,15 @@ import api from '../../api/axiosConfig';
 import { useAuthStore } from '../auth/authStore';
 import '@toast-ui/editor/dist/toastui-editor-viewer.css';
 import { Viewer } from '@toast-ui/react-editor';
+import Prism from 'prismjs';
+import 'prismjs/themes/prism.css';
+import 'prismjs/components/prism-c';
+import 'prismjs/components/prism-cpp';
+import 'prismjs/components/prism-java';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-javascript';
+import codeSyntaxHighlight from '@toast-ui/editor-plugin-code-syntax-highlight';
+import '@toast-ui/editor-plugin-code-syntax-highlight/dist/toastui-editor-plugin-code-syntax-highlight.css';
 
 const CommentItem = ({
 						 comment,
@@ -279,7 +288,8 @@ const PostDetail = () => {
 
 				{/* 본문 내용 */}
 				<div style={{ fontSize: '16px', lineHeight: '1.6', color: '#1f2937', minHeight: '150px' }}>
-					{post.content && <Viewer initialValue={post.content} />}
+					{post.content && <Viewer initialValue={post.content}
+											 plugins={[[codeSyntaxHighlight, { highlighter: Prism }]]} />}
 				</div>
 			</div>
 

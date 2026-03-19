@@ -3,6 +3,15 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import { Editor } from '@toast-ui/react-editor';
 import '@toast-ui/editor/dist/toastui-editor.css';
+import Prism from 'prismjs';
+import 'prismjs/themes/prism.css';
+import 'prismjs/components/prism-c';
+import 'prismjs/components/prism-cpp';
+import 'prismjs/components/prism-java';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-javascript';
+import codeSyntaxHighlight from '@toast-ui/editor-plugin-code-syntax-highlight';
+import '@toast-ui/editor-plugin-code-syntax-highlight/dist/toastui-editor-plugin-code-syntax-highlight.css';
 
 const PostForm = () => {
 	const navigate = useNavigate();
@@ -119,6 +128,7 @@ const PostForm = () => {
 						height="500px"
 						initialEditType="wysiwyg"
 						useCommandShortcut={true}
+						plugins={[[codeSyntaxHighlight, { highlighter: Prism }]]}
 					/>
 				</div>
 
