@@ -12,6 +12,7 @@ const Navbar = () => {
 
   const accessToken = localStorage.getItem("accessToken");
   const isLogin = !!accessToken;
+  const memberId = localStorage.getItem("memberId"); // 추가
 
   const unreadCount = notifications.filter((item) => !item.isRead).length;
 
@@ -36,10 +37,10 @@ const Navbar = () => {
   };
 
   const fetchNotifications = async () => {
-    if (!accessToken) return;
+    if (!accessToken || !memberId) return;
 
     try {
-      const response = await fetch("/api/notifications", {
+      const response = await fetch(`http://localhost:8080/api/v1/notifications/${memberId}`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -59,9 +60,11 @@ const Navbar = () => {
   };
 
   const handleNotificationClick = async (id) => {
+    if (!memberId) return;
+
     try {
-      const response = await fetch(`/api/notifications/${id}/read`, {
-        method: "POST",
+      const response = await fetch(`http://localhost:8080/api/v1/notifications/${memberId}/${id}/read`, {
+        method: "PATCH",
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
@@ -100,23 +103,29 @@ const Navbar = () => {
   }, []);
 
   useEffect(() => {
-    if (!isLogin) return;
+    if (!isLogin || !memberId) return;
 
     fetchNotifications();
 
-    const eventSource = new EventSource("/api/notifications/stream", {
+    const eventSource = new EventSource(
+      `http://localhost:8080/api/v1/notifications/subscribe/${memberId}`,
+      {
         withCredentials: true,
-    });
+      }
+    );
 
-    eventSource.onmessage = (event) => {
+    eventSource.addEventListener("notification", (event) => {
       try {
         const newNotification = JSON.parse(event.data);
 
         setNotifications((prev) => [newNotification, ...prev]);
+
+        window.dispatchEvent(new CustomEvent('gradingResult', { detail: newNotification }));
+        
       } catch (error) {
         console.error("실시간 알림 파싱 오류:", error);
       }
-    };
+    });
 
     eventSource.onerror = (error) => {
       console.error("SSE 연결 오류:", error);
@@ -128,7 +137,7 @@ const Navbar = () => {
       eventSource.close();
       eventSourceRef.current = null;
     };
-  }, [isLogin, accessToken]);
+  }, [isLogin, accessToken, memberId]);
 
   return (
     <nav className="navbar">
