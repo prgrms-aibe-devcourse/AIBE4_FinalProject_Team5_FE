@@ -260,12 +260,12 @@ const UserPage = () => {
 			case 1: return '쉬움';
 			case 2: return '보통';
 			case 3: return '어려움';
-			default: return '알 수 없음';
+			case 4: return '매우 어려움';
 		}
 	};
 
 	return (
-		<div style={{ maxWidth: '820px', margin: '40px auto', padding: '0 16px' }}>
+		<div style={{ maxWidth: '890px', margin: '40px auto', padding: '0 16px' }}>
 			<div style={cs.card}>
 				<div style={cs.avatar}>{profile.nickname.slice(0, 1)}</div>
 				<div style={cs.info}>
@@ -325,12 +325,6 @@ const UserPage = () => {
 					onClose={() => setShowModal(false)}
 				/>
 			)}
-
-			<div style={{ marginTop: '30px', textAlign: 'center' }}>
-				<button onClick={handleLogout} style={{ padding: '12px 24px', backgroundColor: '#64748b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '1rem', fontWeight: '600' }}>
-					테스트용 로그아웃
-				</button>
-			</div>
 		</div>
 	);
 };
