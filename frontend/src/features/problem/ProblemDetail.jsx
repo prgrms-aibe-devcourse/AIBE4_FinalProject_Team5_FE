@@ -189,7 +189,7 @@ const handleSubmit = async () => {
                         <option value="10년 차 시니어 알고리즘 멘토">👨‍🏫 시니어 멘토 (친절함)</option>
                         <option value="리눅스 토발즈">🐧 리눅스 토발즈 (매우 직설적이고 까칠함)</option>
                         <option value="조선시대 훈장님">📜 조선시대 훈장님 (사극 말투)</option>
-                        <option value="해커톤 밤샘 대학생">💻 밤샘 대학생 (피곤하고 하이텐션)</option>
+                        <option value="해커톤 밤샘 대학생">💻 밤샘 대학생 (피곤함)</option>
                     </select>
                     <span style={{ fontSize: '13px', color: '#888' }}>Monaco Editor</span>
                 </div>
