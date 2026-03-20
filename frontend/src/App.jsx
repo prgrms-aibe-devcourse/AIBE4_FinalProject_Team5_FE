@@ -13,6 +13,7 @@ import PostFormPage from "./pages/PostFormPage.jsx";
 import Navbar from "./components/Navbar";
 import "./styles/global.css";
 import { useAuthStore } from './features/auth/authStore';
+import RankingPage from "./pages/RankingPage.jsx";
 
 // 1. 토큰을 감시하고 저장하는 별도의 핸들러 컴포넌트
 const AuthHandler = () => {
@@ -66,6 +67,7 @@ const App = () => {
 				<Route path="/problems/:id" element={<ProblemDetailPage />} />
 				<Route path="/login" element={<LoginPage />} />
 				<Route path="/userpage" element={<UserPage />} />
+				<Route path="/ranking" element={<RankingPage />} />
 				<Route path="/admin/problems/new" element={<ProblemCreatePage />} />
 				<Route path="/admin/problems/:id/edit" element={<ProblemEditPage />} />
 				<Route path="/community" element={<PostListPage />} />

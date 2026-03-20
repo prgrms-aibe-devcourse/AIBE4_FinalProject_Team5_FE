@@ -121,7 +121,7 @@ const Navbar = () => {
         setNotifications((prev) => [newNotification, ...prev]);
 
         window.dispatchEvent(new CustomEvent('gradingResult', { detail: newNotification }));
-        
+
       } catch (error) {
         console.error("실시간 알림 파싱 오류:", error);
       }
@@ -165,6 +165,13 @@ const Navbar = () => {
           className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
         >
           커뮤니티
+        </NavLink>
+
+        <NavLink
+          to="/ranking"
+          className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
+        >
+          랭킹
         </NavLink>
       </div>
 

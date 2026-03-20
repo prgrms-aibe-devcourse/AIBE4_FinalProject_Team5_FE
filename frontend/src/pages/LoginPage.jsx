@@ -378,8 +378,8 @@ const styles = {
 	button: {
 		marginTop: '8px',
 		padding: '12px',
-		backgroundColor: 'var(--primary-color)',
-		color: '#333',
+		backgroundColor: 'var(--color-accent)',
+		color: 'white',
 		border: 'none',
 		borderRadius: '6px',
 		fontSize: '1rem',
