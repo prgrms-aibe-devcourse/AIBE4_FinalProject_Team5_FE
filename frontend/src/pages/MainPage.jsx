@@ -14,7 +14,11 @@ const MainPage = () => {
 
 			<main style={styles.grid}>
 				{/* 회원/랭킹/대시보드 */}
-				<section className="card">
+				<section
+					className="card"
+					style={styles.clickableCard}
+					onClick={() => navigate('/ranking')}
+				>
 					<h2>🏆 실시간 랭킹</h2>
 					<p style={styles.placeholder}>랭킹 리스트 컴포넌트</p>
 				</section>
