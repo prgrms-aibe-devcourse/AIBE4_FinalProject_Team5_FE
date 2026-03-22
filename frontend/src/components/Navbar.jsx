@@ -164,10 +164,6 @@ const Navbar = () => {
         const newNotification = JSON.parse(event.data);
         setNotifications((prev) => [newNotification, ...prev]);
         window.dispatchEvent(new CustomEvent('gradingResult', { detail: newNotification }));
-<<<<<<< HEAD
-=======
-
->>>>>>> ccb1abef654d8a45b2e41f26abc100bc7aec5c1f
       } catch (error) {
         console.error("실시간 알림 파싱 오류:", error);
       }
