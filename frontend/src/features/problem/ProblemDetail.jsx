@@ -18,8 +18,7 @@ const ProblemDetail = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [persona, setPersona] = useState("10년 차 시니어 알고리즘 멘토");
 
-    // 🌟 콘솔창 출력을 관리하는 상태
-    const [consoleOutput, setConsoleOutput] = useState("실행 결과가 여기에 표시됩니다.\n코드를 작성하고 우측 하단의 제출 버튼을 눌러주세요.");
+    const [consoleOutput, setConsoleOutput] = useState("실행 결과가 여기에 표시됩니다.\n\n코드를 작성하고 우측 하단의 제출 버튼을 눌러주세요.");
 
     const defaultCodes = {
         java: 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // 코드를 작성하세요\n    }\n}',
@@ -51,66 +50,75 @@ const ProblemDetail = () => {
         fetchProblemDetail();
     }, [id]);
 
-useEffect(() => {
-    const handleGradingResult = (e) => {
-        const resultData = e.detail;
+    useEffect(() => {
+        const handleGradingResult = (e) => {
+            const resultData = e.detail;
 
-        // 다른 문제 번호에서 온 알림은 무시
-        if (resultData?.targetUrl && resultData.targetUrl !== `/problems/${id}`) {
+            if (resultData?.targetUrl && resultData.targetUrl !== `/problems/${id}`) {
+                return;
+            }
+
+            // 🌟 단순 엔터(\n)를 마크다운 강제 줄바꿈(스페이스 2번 + \n)으로 변환
+            const formattedMessage = resultData.message.replace(/\n/g, '  \n');
+
+            setConsoleOutput(prev => prev + `\n\n---\n\n${formattedMessage}`);
+
+            if (resultData.message.includes("[AI 코드 리뷰]") || resultData.message.includes("서버 오류")) {
+                setIsSubmitting(false); 
+            }
+        };
+
+        window.addEventListener('gradingResult', handleGradingResult);
+        return () => window.removeEventListener('gradingResult', handleGradingResult);
+    }, [id]);
+    
+    const handleSubmit = async () => {
+        setIsSubmitting(true);
+        
+        // 🌟 진행 상황 텍스트 마크다운 줄바꿈 적용
+        setConsoleOutput(`🚀 코드를 서버로 전송하고 있습니다...  \n- 언어: ${language}  \n- 문제 번호: ${id}  \n`);
+
+        const memberId = localStorage.getItem('memberId');
+
+        if (!memberId) {
+            setConsoleOutput(prev => prev + `\n\n❌ [에러 발생] 로그인 정보(memberId)가 없습니다.`);
+            setIsSubmitting(false);
             return;
         }
 
-        setConsoleOutput(prev => prev + `\n\n---\n\n${resultData.message}`);
+        const payload = {
+            memberId: Number(memberId),
+            problemId: Number(id),
+            language: language,
+            sourceCode: code,
+            persona: persona
+        };
 
-        if (resultData.message.includes("[AI 코드 리뷰]") || resultData.message.includes("서버 오류")) {
-            setIsSubmitting(false); 
+        try {
+            const submitUrl = import.meta.env.VITE_API_BASE_URL
+                ? `${import.meta.env.VITE_API_BASE_URL}/api/v1/submissions`
+                : `http://localhost:8080/api/v1/submissions`;
+
+            await axios.post(submitUrl, payload, {
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            setConsoleOutput(prev => prev + `\n\n✅ [전송 완료] 대기열에 등록되었습니다.  \n⏳ 채점 및 AI 리뷰를 기다리는 중입니다...`);
+
+        } catch (err) {
+            console.error('제출 실패:', err);
+            
+            // 🌟 백엔드에서 429 에러(Rate Limit 초과)를 보냈을 때의 처리!
+            if (err.response && err.response.status === 429) {
+                setConsoleOutput(prev => prev + `\n\n⚠️ [시스템 차단] 비정상적인 다중 제출이 감지되었습니다.  \n서버 안정을 위해 잠시 후 다시 시도해주세요.`);
+            } else {
+                setConsoleOutput(prev => prev + `\n\n❌ [에러 발생] 코드 제출에 실패했습니다. 서버 상태를 확인해주세요.`);
+                alert('코드 제출에 실패했습니다.');
+            }
+            
+            setIsSubmitting(false);
         }
     };
-
-    window.addEventListener('gradingResult', handleGradingResult);
-    return () => window.removeEventListener('gradingResult', handleGradingResult);
-}, [id]);
-
-const handleSubmit = async () => {
-    setIsSubmitting(true);
-    setConsoleOutput(`코드를 서버로 전송하고 있습니다...\n- 언어: ${language}\n- 문제 번호: ${id}\n`);
-
-    const memberId = localStorage.getItem('memberId');
-
-    if (!memberId) {
-        setConsoleOutput(prev => prev + `\n❌ [에러 발생] 로그인 정보(memberId)가 없습니다.\n`);
-        setIsSubmitting(false);
-        return;
-    }
-
-    const payload = {
-        memberId: Number(memberId),
-        problemId: Number(id),
-        language: language,
-        sourceCode: code,
-        persona: persona
-    };
-
-    try {
-        const submitUrl = import.meta.env.VITE_API_BASE_URL
-            ? `${import.meta.env.VITE_API_BASE_URL}/api/v1/submissions`
-            : `http://localhost:8080/api/v1/submissions`;
-
-        await axios.post(submitUrl, payload, {
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        setConsoleOutput(prev => prev + `\n✅ [전송 완료] 대기열에 등록되었습니다.\n채점 및 AI 리뷰를 기다리는 중입니다...\n`);
-
-        // 여기서는 false로 돌리지 않음
-        // 실제 채점 완료 알림(SSE) 받을 때 false 처리
-    } catch (err) {
-        console.error('제출 실패:', err);
-        setConsoleOutput(prev => prev + `\n❌ [에러 발생] 코드 제출에 실패했습니다. 서버 상태를 확인해주세요.\n`);
-        setIsSubmitting(false);
-        alert('코드 제출에 실패했습니다.');
-    }
-};
 
     if (isLoading) return <div style={{ padding: '50px', textAlign: 'center' }}>문제 불러오는 중... ⏳</div>;
     if (error || !problem) return <div style={{ padding: '50px', textAlign: 'center', color: 'red' }}>{error || '문제가 없습니다.'}</div>;
@@ -118,7 +126,7 @@ const handleSubmit = async () => {
     return (
         <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
 
-            {/* 🟢 좌측 영역 (변경 없음) */}
+            {/* 🟢 좌측 영역 */}
             <div style={{ flex: 1, padding: '24px', overflowY: 'auto', borderRight: '1px solid #ddd', backgroundColor: '#fff' }}>
                 <button onClick={() => navigate('/problems')} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', marginBottom: '16px', fontSize: '14px', padding: 0 }}>← 문제 목록으로</button>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -206,14 +214,54 @@ const handleSubmit = async () => {
                     />
                 </div>
 
-                {/* 🌟 2. 하단 콘솔창 영역 (비율 40%) - ReactMarkdown 적용! */}
+                {/* 🌟 2. 하단 콘솔창 영역 (비율 40%) - ReactMarkdown 커스텀 컴포넌트 적용! */}
                 <div style={{ flex: 0.4, display: 'flex', flexDirection: 'column', borderTop: '2px solid #000', backgroundColor: '#000' }}>
                     <div style={{ padding: '8px 16px', backgroundColor: '#1e1e1e', borderBottom: '1px solid #333', fontSize: '13px', fontWeight: 'bold', color: '#bbb' }}>
                         🖥️ 실행 콘솔 (Console)
                     </div>
-                    {/* 마크다운을 지원하도록 수정된 콘솔 출력부 */}
                     <div className="custom-console" style={{ flex: 1, padding: '12px 16px', overflowY: 'auto', fontFamily: 'D2Coding, Consolas, monospace', fontSize: '14px', color: '#10b981', lineHeight: '1.6' }}>
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        <ReactMarkdown 
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                                // 인라인 코드 및 코드 블록 내부 글꼴/스타일 강제 적용
+                                code({node, inline, className, children, ...props}) {
+                                    return (
+                                        <code 
+                                            style={{ 
+                                                fontFamily: '"D2Coding", "Consolas", "Monaco", "Courier New", monospace',
+                                                backgroundColor: inline ? '#2d2d2d' : 'transparent',
+                                                padding: inline ? '2px 6px' : '0',
+                                                borderRadius: '4px',
+                                                fontSize: '14px',
+                                                color: inline ? '#e2e8f0' : 'inherit'
+                                            }} 
+                                            {...props}
+                                        >
+                                            {children}
+                                        </code>
+                                    )
+                                },
+                                // 코드 블록 전체 박스 디자인
+                                pre({node, children, ...props}) {
+                                    return (
+                                        <pre 
+                                            style={{ 
+                                                backgroundColor: '#1e1e1e',
+                                                padding: '16px', 
+                                                borderRadius: '8px', 
+                                                overflowX: 'auto',
+                                                marginTop: '12px',
+                                                marginBottom: '12px',
+                                                border: '1px solid #333'
+                                            }} 
+                                            {...props}
+                                        >
+                                            {children}
+                                        </pre>
+                                    )
+                                }
+                            }}
+                        >
                             {consoleOutput}
                         </ReactMarkdown>
                     </div>

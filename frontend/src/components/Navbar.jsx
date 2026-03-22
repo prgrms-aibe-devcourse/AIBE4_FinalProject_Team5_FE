@@ -12,9 +12,11 @@ const Navbar = () => {
 
   const accessToken = localStorage.getItem("accessToken");
   const isLogin = !!accessToken;
-  const memberId = localStorage.getItem("memberId"); // 추가
+  const memberId = localStorage.getItem("memberId");
 
-  const unreadCount = notifications.filter((item) => !item.isRead).length;
+  // 안 읽은 알림만 필터링하여 저장
+  const unreadNotifications = notifications.filter((item) => !item.isRead);
+  const unreadCount = unreadNotifications.length;
 
   const logout = useAuthStore((state) => state.logout);
 
@@ -27,8 +29,7 @@ const Navbar = () => {
       eventSourceRef.current = null;
     }
 
-	logout();
-
+    logout();
     navigate("/");
   };
 
@@ -85,6 +86,50 @@ const Navbar = () => {
     }
   };
 
+  // 알림 전체 읽음 처리 함수 추가
+  const handleMarkAllAsRead = async () => {
+    if (!memberId) return;
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/notifications/${memberId}/read-all`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("알림 전체 읽음 처리 실패");
+      }
+
+      setNotifications((prev) =>
+        prev.map((item) => ({ ...item, isRead: true }))
+      );
+    } catch (error) {
+      console.error("알림 전체 읽음 처리 중 오류:", error);
+    }
+  };
+
+  const formatNotificationText = (item) => {
+    const text = item.message;
+    if (!text) return "새 알림이 도착했습니다.";
+
+    if (text.startsWith("[채점 결과]")) {
+      const lines = text.split('\n');
+      const problemNum = lines[1]?.replace("문제 번호: ", "").trim() || "";
+      const result = lines[2]?.replace("결과: ", "").trim() || "";
+      return `📝 [채점 완료] ${problemNum}번 문제 : ${result}`;
+    }
+    
+    if (text.startsWith("[AI 코드 리뷰]")) {
+      const problemId = item.targetUrl ? item.targetUrl.split('/').pop() : '';
+      return `🤖 [AI 리뷰] ${problemId}번 문제 피드백 도착!`;
+    }
+
+    return text.length > 30 ? text.substring(0, 30) + "..." : text;
+  };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -117,11 +162,8 @@ const Navbar = () => {
     eventSource.addEventListener("notification", (event) => {
       try {
         const newNotification = JSON.parse(event.data);
-
         setNotifications((prev) => [newNotification, ...prev]);
-
         window.dispatchEvent(new CustomEvent('gradingResult', { detail: newNotification }));
-        
       } catch (error) {
         console.error("실시간 알림 파싱 오류:", error);
       }
@@ -146,24 +188,15 @@ const Navbar = () => {
           Coditor
         </NavLink>
 
-        <NavLink
-          to="/"
-          className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
-        >
+        <NavLink to="/" className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
           메인페이지
         </NavLink>
 
-        <NavLink
-          to="/problems"
-          className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
-        >
+        <NavLink to="/problems" className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
           문제
         </NavLink>
 
-        <NavLink
-          to="/community"
-          className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
-        >
+        <NavLink to="/community" className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
           커뮤니티
         </NavLink>
       </div>
@@ -187,17 +220,29 @@ const Navbar = () => {
 
             {showNotifications && (
               <div className="notification-dropdown">
-                <div className="notification-dropdown-header">알림</div>
+                {/* 드롭다운 헤더에 '모두 읽음' 버튼 추가 */}
+                <div className="notification-dropdown-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>알림</span>
+                  {unreadCount > 0 && (
+                    <button 
+                      onClick={handleMarkAllAsRead}
+                      style={{ background: 'none', border: 'none', color: '#0d6efd', fontSize: '12px', cursor: 'pointer', padding: 0 }}
+                    >
+                      모두 읽음
+                    </button>
+                  )}
+                </div>
 
-                {notifications.length > 0 ? (
-                  notifications.map((item) => (
+                {/* 읽은 알림은 무시하고, 안 읽은 알림(unreadNotifications)만 렌더링 */}
+                {unreadCount > 0 ? (
+                  unreadNotifications.map((item) => (
                     <button
                       key={item.id}
                       type="button"
-                      className={`notification-item${item.isRead ? "" : " unread"}`}
+                      className="notification-item unread"
                       onClick={() => handleNotificationClick(item.id)}
                     >
-                      {item.message}
+                      {formatNotificationText(item)}
                     </button>
                   ))
                 ) : (
@@ -210,18 +255,11 @@ const Navbar = () => {
 
         {isLogin ? (
           <>
-            <NavLink
-              to="/userpage"
-              className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
-            >
+            <NavLink to="/userpage" className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
               마이페이지
             </NavLink>
 
-            <button
-              type="button"
-              className="logout-btn"
-              onClick={handleLogout}
-            >
+            <button type="button" className="logout-btn" onClick={handleLogout}>
               로그아웃
             </button>
           </>
