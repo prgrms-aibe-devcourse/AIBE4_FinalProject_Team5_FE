@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api/axiosConfig';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Editor from '@monaco-editor/react';
@@ -33,11 +33,7 @@ const ProblemDetail = () => {
     useEffect(() => {
         const fetchProblemDetail = async () => {
             try {
-                const apiUrl = import.meta.env.VITE_API_BASE_URL
-                    ? `${import.meta.env.VITE_API_BASE_URL}/coditor/problems/${id}`
-                    : `http://localhost:8080/coditor/problems/${id}`;
-
-                const response = await axios.get(apiUrl);
+                const response = await api.get(`/coditor/problems/${id}`);
                 setProblem(response.data);
             } catch (err) {
                 console.error('상세 조회 에러:', err);
@@ -53,14 +49,9 @@ const ProblemDetail = () => {
     useEffect(() => {
         const handleGradingResult = (e) => {
             const resultData = e.detail;
+            if (resultData?.targetUrl && resultData.targetUrl !== `/problems/${id}`) return;
 
-            if (resultData?.targetUrl && resultData.targetUrl !== `/problems/${id}`) {
-                return;
-            }
-
-            // 🌟 단순 엔터(\n)를 마크다운 강제 줄바꿈(스페이스 2번 + \n)으로 변환
             const formattedMessage = resultData.message.replace(/\n/g, '  \n');
-
             setConsoleOutput(prev => prev + `\n\n---\n\n${formattedMessage}`);
 
             if (resultData.message.includes("[AI 코드 리뷰]") || resultData.message.includes("서버 오류")) {
@@ -74,12 +65,9 @@ const ProblemDetail = () => {
     
     const handleSubmit = async () => {
         setIsSubmitting(true);
-        
-        // 🌟 진행 상황 텍스트 마크다운 줄바꿈 적용
         setConsoleOutput(`🚀 코드를 서버로 전송하고 있습니다...  \n- 언어: ${language}  \n- 문제 번호: ${id}  \n`);
 
         const memberId = localStorage.getItem('memberId');
-
         if (!memberId) {
             setConsoleOutput(prev => prev + `\n\n❌ [에러 발생] 로그인 정보(memberId)가 없습니다.`);
             setIsSubmitting(false);
@@ -95,27 +83,18 @@ const ProblemDetail = () => {
         };
 
         try {
-            const submitUrl = import.meta.env.VITE_API_BASE_URL
-                ? `${import.meta.env.VITE_API_BASE_URL}/api/v1/submissions`
-                : `http://localhost:8080/api/v1/submissions`;
-
-            await axios.post(submitUrl, payload, {
-                headers: { 'Content-Type': 'application/json' }
-            });
+            await api.post('/api/v1/submissions', payload);
 
             setConsoleOutput(prev => prev + `\n\n✅ [전송 완료] 대기열에 등록되었습니다.  \n⏳ 채점 및 AI 리뷰를 기다리는 중입니다...`);
 
         } catch (err) {
             console.error('제출 실패:', err);
-            
-            // 🌟 백엔드에서 429 에러(Rate Limit 초과)를 보냈을 때의 처리!
             if (err.response && err.response.status === 429) {
                 setConsoleOutput(prev => prev + `\n\n⚠️ [시스템 차단] 비정상적인 다중 제출이 감지되었습니다.  \n서버 안정을 위해 잠시 후 다시 시도해주세요.`);
             } else {
                 setConsoleOutput(prev => prev + `\n\n❌ [에러 발생] 코드 제출에 실패했습니다. 서버 상태를 확인해주세요.`);
                 alert('코드 제출에 실패했습니다.');
             }
-            
             setIsSubmitting(false);
         }
     };
@@ -125,8 +104,7 @@ const ProblemDetail = () => {
 
     return (
         <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-
-            {/* 🟢 좌측 영역 */}
+            {/* 좌측 영역 (문제 지문) */}
             <div style={{ flex: 1, padding: '24px', overflowY: 'auto', borderRight: '1px solid #ddd', backgroundColor: '#fff' }}>
                 <button onClick={() => navigate('/problems')} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', marginBottom: '16px', fontSize: '14px', padding: 0 }}>← 문제 목록으로</button>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -142,6 +120,7 @@ const ProblemDetail = () => {
                 <div style={{ lineHeight: '1.6', color: '#333', fontSize: '15px' }}>
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{problem.content}</ReactMarkdown>
                 </div>
+                {/* ... 입출력 예시 및 상세 지문은 기존과 동일 ... */}
                 <hr style={{ margin: '32px 0', border: 'none', borderTop: '1px solid #eee' }} />
                 <div style={{ marginBottom: '24px' }}>
                     <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>입력</h2>
@@ -181,7 +160,7 @@ const ProblemDetail = () => {
                 </div>
             </div>
 
-            {/* 🔵 우측 영역: IDE + 콘솔창 영역 */}
+            {/* 우측 영역 (IDE + 콘솔) */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#1e1e1e', color: '#d4d4d4' }}>
                 <div style={{ padding: '12px 20px', backgroundColor: '#2d2d2d', borderBottom: '1px solid #444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <select value={language} onChange={(e) => setLanguage(e.target.value)} style={{ padding: '6px 12px', borderRadius: '4px', backgroundColor: '#3c3c3c', color: '#fff', border: '1px solid #555', outline: 'none', cursor: 'pointer' }}>
@@ -189,11 +168,7 @@ const ProblemDetail = () => {
                         <option value="python">Python (3.9)</option>
                         <option value="javascript">JavaScript (Node.js)</option>
                     </select>
-                    <select 
-                        value={persona} 
-                        onChange={(e) => setPersona(e.target.value)} 
-                        style={{ padding: '6px 12px', marginLeft: '10px', borderRadius: '4px', backgroundColor: '#3c3c3c', color: '#fff', border: '1px solid #555' }}
-                    >
+                    <select value={persona} onChange={(e) => setPersona(e.target.value)} style={{ padding: '6px 12px', marginLeft: '10px', borderRadius: '4px', backgroundColor: '#3c3c3c', color: '#fff', border: '1px solid #555' }}>
                         <option value="10년 차 시니어 알고리즘 멘토">👨‍🏫 시니어 멘토 (친절함)</option>
                         <option value="리눅스 토발즈">🐧 리눅스 토발즈 (매우 직설적이고 까칠함)</option>
                         <option value="조선시대 훈장님">📜 조선시대 훈장님 (사극 말투)</option>
@@ -202,7 +177,6 @@ const ProblemDetail = () => {
                     <span style={{ fontSize: '13px', color: '#888' }}>Monaco Editor</span>
                 </div>
 
-                {/* 1. 에디터 영역 (비율 60%) */}
                 <div style={{ flex: 0.6, overflow: 'hidden' }}>
                     <Editor
                         height="100%"
@@ -214,7 +188,7 @@ const ProblemDetail = () => {
                     />
                 </div>
 
-                {/* 🌟 2. 하단 콘솔창 영역 (비율 40%) - ReactMarkdown 커스텀 컴포넌트 적용! */}
+                {/* 하단 콘솔창 영역 */}
                 <div style={{ flex: 0.4, display: 'flex', flexDirection: 'column', borderTop: '2px solid #000', backgroundColor: '#000' }}>
                     <div style={{ padding: '8px 16px', backgroundColor: '#1e1e1e', borderBottom: '1px solid #333', fontSize: '13px', fontWeight: 'bold', color: '#bbb' }}>
                         🖥️ 실행 콘솔 (Console)
@@ -223,39 +197,16 @@ const ProblemDetail = () => {
                         <ReactMarkdown 
                             remarkPlugins={[remarkGfm]}
                             components={{
-                                // 인라인 코드 및 코드 블록 내부 글꼴/스타일 강제 적용
                                 code({node, inline, className, children, ...props}) {
                                     return (
-                                        <code 
-                                            style={{ 
-                                                fontFamily: '"D2Coding", "Consolas", "Monaco", "Courier New", monospace',
-                                                backgroundColor: inline ? '#2d2d2d' : 'transparent',
-                                                padding: inline ? '2px 6px' : '0',
-                                                borderRadius: '4px',
-                                                fontSize: '14px',
-                                                color: inline ? '#e2e8f0' : 'inherit'
-                                            }} 
-                                            {...props}
-                                        >
+                                        <code style={{ fontFamily: '"D2Coding", "Consolas", "Monaco", "Courier New", monospace', backgroundColor: inline ? '#2d2d2d' : 'transparent', padding: inline ? '2px 6px' : '0', borderRadius: '4px', fontSize: '14px', color: inline ? '#e2e8f0' : 'inherit' }} {...props}>
                                             {children}
                                         </code>
                                     )
                                 },
-                                // 코드 블록 전체 박스 디자인
                                 pre({node, children, ...props}) {
                                     return (
-                                        <pre 
-                                            style={{ 
-                                                backgroundColor: '#1e1e1e',
-                                                padding: '16px', 
-                                                borderRadius: '8px', 
-                                                overflowX: 'auto',
-                                                marginTop: '12px',
-                                                marginBottom: '12px',
-                                                border: '1px solid #333'
-                                            }} 
-                                            {...props}
-                                        >
+                                        <pre style={{ backgroundColor: '#1e1e1e', padding: '16px', borderRadius: '8px', overflowX: 'auto', marginTop: '12px', marginBottom: '12px', border: '1px solid #333' }} {...props}>
                                             {children}
                                         </pre>
                                     )
@@ -268,16 +219,11 @@ const ProblemDetail = () => {
                 </div>
 
                 <div style={{ padding: '16px 20px', borderTop: '1px solid #444', backgroundColor: '#2d2d2d', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                    <button 
-                        onClick={handleSubmit} 
-                        disabled={isSubmitting}
-                        style={{ padding: '10px 24px', backgroundColor: isSubmitting ? '#555' : '#0d6efd', color: '#fff', border: 'none', borderRadius: '6px', cursor: isSubmitting ? 'not-allowed' : 'pointer', fontWeight: 'bold', transition: 'background-color 0.2s' }}
-                    >
+                    <button onClick={handleSubmit} disabled={isSubmitting} style={{ padding: '10px 24px', backgroundColor: isSubmitting ? '#555' : '#0d6efd', color: '#fff', border: 'none', borderRadius: '6px', cursor: isSubmitting ? 'not-allowed' : 'pointer', fontWeight: 'bold', transition: 'background-color 0.2s' }}>
                         {isSubmitting ? '제출 중... ⏳' : '제출하기 🚀'}
                     </button>
                 </div>
             </div>
-
         </div>
     );
 };
